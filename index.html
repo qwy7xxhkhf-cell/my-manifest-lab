@@ -56,6 +56,7 @@
   .logo h1 { font-size: 17px; font-weight: 700; }
   .logo p  { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 3px; }
   .logo-user { font-size: 11px; color: var(--accent); margin-top: 8px; font-weight: 600; }
+  .mobile-settings-tab { display: none; }
   .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 24px; font-size: 12.5px; cursor: pointer; color: var(--soft); border-left: 3px solid transparent; transition: all 0.2s; }
   .nav-item:hover { color: var(--accent); background: #FDF0F2; }
   .nav-item.active { color: var(--accent); background: #FDF0F2; border-left-color: var(--accent); font-weight: 600; }
@@ -158,6 +159,9 @@
     body { flex-direction: column; padding-bottom: 64px; }
     #sidebar { width: 100%; height: 64px; position: fixed; top: auto; bottom: 0; left: 0; right: 0; flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0; border-right: none; border-top: 1px solid var(--border); z-index: 200; scrollbar-width: none; }
     #sidebar::-webkit-scrollbar { display: none; }
+    /* Show settings tab in mobile nav, hide desktop-only nav-settings block */
+    .nav-settings { display: none; }
+    .mobile-settings-tab { display: flex !important; }
     .logo { display: none; }
     .nav-settings { display: none; }
     .nav-item { flex-direction: column; gap: 2px; padding: 8px 14px; font-size: 9px; border-left: none; border-top: 3px solid transparent; white-space: nowrap; flex-shrink: 0; min-width: 56px; justify-content: center; align-items: center; }
@@ -194,19 +198,29 @@
     <!-- Login -->
     <div id="auth-login">
       <div class="auth-err" id="login-err"></div>
-      <input class="auth-input" id="login-email" type="email" placeholder="電郵地址" />
-      <input class="auth-input" id="login-pw" type="password" placeholder="密碼" />
+      <input class="auth-input" id="login-email" type="email" placeholder="電郵地址" autocomplete="email" />
+      <input class="auth-input" id="login-pw" type="password" placeholder="密碼" autocomplete="current-password" />
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;text-align:left;">
+        <input type="checkbox" id="remember-me" style="width:auto;accent-color:var(--accent);" checked />
+        <label for="remember-me" style="font-size:12px;color:var(--soft);cursor:pointer;">記住我（30天）</label>
+      </div>
       <button class="auth-btn" onclick="doLogin()">登入</button>
       <div class="auth-divider">還沒有帳號？<span style="color:var(--accent);cursor:pointer;" onclick="switchTab('register')">立即註冊</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;text-align:left;">
+        💡 資料儲存在你的瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄。
+      </div>
     </div>
     <!-- Register -->
     <div id="auth-register" style="display:none;">
       <div class="auth-err" id="reg-err"></div>
-      <input class="auth-input" id="reg-name" type="text" placeholder="暱稱（顯示用）" />
-      <input class="auth-input" id="reg-email" type="email" placeholder="電郵地址" />
-      <input class="auth-input" id="reg-pw" type="password" placeholder="密碼（至少6位）" />
-      <input class="auth-input" id="reg-pw2" type="password" placeholder="確認密碼" />
+      <input class="auth-input" id="reg-name" type="text" placeholder="暱稱（顯示用）" autocomplete="nickname" />
+      <input class="auth-input" id="reg-email" type="email" placeholder="電郵地址" autocomplete="email" />
+      <input class="auth-input" id="reg-pw" type="password" placeholder="密碼（至少6位）" autocomplete="new-password" />
+      <input class="auth-input" id="reg-pw2" type="password" placeholder="確認密碼" autocomplete="new-password" />
       <button class="auth-btn" onclick="doRegister()">建立帳號</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;text-align:left;">
+        💡 你的帳號和記錄儲存在這個瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄，以免資料丟失。
+      </div>
     </div>
   </div>
 </div>
@@ -236,12 +250,19 @@
       <span class="settings-value" id="settings-diary"></span>
     </div>
     <div class="settings-row">
+      <span class="settings-label">備份資料</span>
+      <button class="settings-btn" onclick="exportData()">下載備份</button>
+    </div>
+    <div class="settings-row">
       <span class="settings-label">重置所有數據</span>
       <button class="settings-btn settings-danger" onclick="resetData()">重置</button>
     </div>
     <div class="settings-row">
       <span class="settings-label">登出</span>
       <button class="settings-btn" onclick="doLogout()">登出</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;">
+      💡 資料儲存在此瀏覽器。換瀏覽器或清除記錄後資料會消失。建議定期下載備份。
     </div>
     <button class="settings-close" onclick="closeSettings()">關閉</button>
   </div>
@@ -273,8 +294,10 @@
         </div>
       </a>
     </div>
-    <div class="nav-item" onclick="openSettings()">  <span>⚙️</span><span>設定</span></div>
+    <div class="nav-item" onclick="openSettings()"><span>⚙️</span><span>設定</span></div>
   </div>
+  <!-- Mobile-only settings + kofi tab -->
+  <div class="nav-item mobile-settings-tab" onclick="openSettings()"><span>⚙️</span><span>設定</span></div>
 </div>
 
 <!-- ── MAIN ───────────────────────────────────────────────────────────────────── -->
@@ -793,10 +816,33 @@ const PAGE_LABELS = {home:"首頁",library:"狂A播放器庫",diary:"狂A日記"
 // ════════════════════════════════════════════════════════════════════════════
 let currentUser = null;
 
-function getUsers()  { return JSON.parse(localStorage.getItem('ml_users') || '{}'); }
-function saveUsers(u){ localStorage.setItem('ml_users', JSON.stringify(u)); }
-function getUserData(email){ return JSON.parse(localStorage.getItem('ml_data_' + email) || 'null'); }
-function saveUserData(email, data){ localStorage.setItem('ml_data_' + email, JSON.stringify(data)); }
+// ── Storage helpers ───────────────────────────────────────────────────────────
+// Uses both localStorage (persistent) and sessionStorage (tab-level backup)
+function mlSet(key, val) {
+  const str = JSON.stringify(val);
+  try { localStorage.setItem(key, str); } catch(e) {}
+  try { sessionStorage.setItem(key, str); } catch(e) {}
+}
+function mlGet(key) {
+  try {
+    const ls = localStorage.getItem(key);
+    if (ls) return JSON.parse(ls);
+  } catch(e) {}
+  try {
+    const ss = sessionStorage.getItem(key);
+    if (ss) return JSON.parse(ss);
+  } catch(e) {}
+  return null;
+}
+function mlRemove(key) {
+  try { localStorage.removeItem(key); } catch(e) {}
+  try { sessionStorage.removeItem(key); } catch(e) {}
+}
+
+function getUsers()  { return mlGet('ml_users') || {}; }
+function saveUsers(u){ mlSet('ml_users', u); }
+function getUserData(email){ return mlGet('ml_data_' + email); }
+function saveUserData(email, data){ mlSet('ml_data_' + email, data); }
 
 function defaultData() {
   return { count:0, diary:[], favs:{}, story:"", joined: new Date().toLocaleDateString("zh-TW"), challengeStart: Date.now() };
@@ -810,14 +856,17 @@ function switchTab(tab) {
 }
 
 function doLogin() {
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pw    = document.getElementById('login-pw').value;
-  const err   = document.getElementById('login-err');
-  const users = getUsers();
+  const email  = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw     = document.getElementById('login-pw').value;
+  const remember = document.getElementById('remember-me').checked;
+  const err    = document.getElementById('login-err');
+  const users  = getUsers();
   if (!users[email]) { err.textContent = '找不到此帳號，請先註冊'; return; }
-  if (users[email].pw !== btoa(pw)) { err.textContent = '密碼錯誤'; return; }
+  if (users[email].pw !== btoa(unescape(encodeURIComponent(pw)))) { err.textContent = '密碼錯誤'; return; }
   err.textContent = '';
-  loginSuccess(email, users[email].name);
+  // Set session expiry
+  const expiry = remember ? Date.now() + 30*24*60*60*1000 : Date.now() + 24*60*60*1000;
+  loginSuccess(email, users[email].name, expiry);
 }
 
 function doRegister() {
@@ -826,22 +875,24 @@ function doRegister() {
   const pw    = document.getElementById('reg-pw').value;
   const pw2   = document.getElementById('reg-pw2').value;
   const err   = document.getElementById('reg-err');
-  if (!name)           { err.textContent = '請輸入暱稱'; return; }
+  if (!name)                { err.textContent = '請輸入暱稱'; return; }
   if (!email.includes('@')) { err.textContent = '請輸入有效電郵'; return; }
-  if (pw.length < 6)   { err.textContent = '密碼至少6位'; return; }
-  if (pw !== pw2)      { err.textContent = '兩次密碼不一致'; return; }
+  if (pw.length < 6)        { err.textContent = '密碼至少6位'; return; }
+  if (pw !== pw2)           { err.textContent = '兩次密碼不一致'; return; }
   const users = getUsers();
-  if (users[email])    { err.textContent = '此電郵已被使用'; return; }
-  users[email] = { name, pw: btoa(pw) };
+  if (users[email])         { err.textContent = '此電郵已被使用，請直接登入'; return; }
+  users[email] = { name, pw: btoa(unescape(encodeURIComponent(pw))) };
   saveUsers(users);
   saveUserData(email, defaultData());
   err.textContent = '';
-  loginSuccess(email, name);
+  const expiry = Date.now() + 30*24*60*60*1000; // auto remember on register
+  loginSuccess(email, name, expiry);
 }
 
-function loginSuccess(email, name) {
+function loginSuccess(email, name, expiry) {
   currentUser = { email, name };
-  localStorage.setItem('ml_session', JSON.stringify(currentUser));
+  const session = { email, name, expiry: expiry || Date.now() + 30*24*60*60*1000 };
+  mlSet('ml_session', session);
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('sidebar-username').textContent = '👤 ' + name;
   loadUserData();
@@ -849,7 +900,7 @@ function loginSuccess(email, name) {
 }
 
 function doLogout() {
-  localStorage.removeItem('ml_session');
+  mlRemove('ml_session');
   currentUser = null;
   closeSettings();
   location.reload();
@@ -869,7 +920,7 @@ function persist() {
   if (!currentUser) return;
   const d = getUserData(currentUser.email) || defaultData();
   d.count = myCount; d.diary = diaryEntries; d.favs = favs;
-  d.story = document.getElementById('home-story').value;
+  d.story = document.getElementById('home-story') ? document.getElementById('home-story').value : (d.story||'');
   saveUserData(currentUser.email, d);
 }
 
@@ -889,6 +940,18 @@ function openSettings() {
   document.getElementById('settings-overlay').classList.add('show');
 }
 function closeSettings() { document.getElementById('settings-overlay').classList.remove('show'); }
+
+function exportData() {
+  if (!currentUser) return;
+  const d = getUserData(currentUser.email) || defaultData();
+  const blob = new Blob([JSON.stringify({ user: currentUser, data: d, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'manifest-lab-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 function resetData() {
   if (!confirm('確定要重置所有數據嗎？此操作不可還原。')) return;
   saveUserData(currentUser.email, defaultData());
@@ -1308,16 +1371,23 @@ function initApp() {
   updateClub();
 }
 
-// Check existing session
-const session = JSON.parse(localStorage.getItem('ml_session') || 'null');
+// Check existing session (with expiry check)
+const session = mlGet('ml_session');
 if (session && session.email) {
   const users = getUsers();
-  if (users[session.email]) {
-    currentUser = session;
+  const notExpired = !session.expiry || Date.now() < session.expiry;
+  if (users[session.email] && notExpired) {
+    currentUser = { email: session.email, name: session.name };
+    // Refresh session expiry on each visit
+    session.expiry = Date.now() + 30*24*60*60*1000;
+    mlSet('ml_session', session);
     document.getElementById('auth-overlay').classList.add('hidden');
     document.getElementById('sidebar-username').textContent = '👤 ' + session.name;
     loadUserData();
     initApp();
+  } else {
+    // Expired or user not found — clear and show login
+    mlRemove('ml_session');
   }
 }
 
