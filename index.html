@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Manifest Lab" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -207,15 +208,20 @@
       <div class="auth-err" id="login-err"></div>
       <input class="auth-input" id="login-email" type="email" placeholder="電郵地址" autocomplete="email" />
       <input class="auth-input" id="login-pw" type="password" placeholder="密碼" autocomplete="current-password" />
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;text-align:left;">
-        <input type="checkbox" id="remember-me" style="width:auto;accent-color:var(--accent);" checked />
-        <label for="remember-me" style="font-size:12px;color:var(--soft);cursor:pointer;">記住我（30天）</label>
-      </div>
-      <button class="auth-btn" onclick="doLogin()">登入</button>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">登入</button>
       <div class="auth-divider">還沒有帳號？<span style="color:var(--accent);cursor:pointer;" onclick="switchTab('register')">立即註冊</span></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;text-align:left;">
-        💡 資料儲存在你的瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄。<br>
-        📱 iPhone 用戶：點 Safari 底部 <strong>分享 → 加入主畫面</strong>，像App一樣使用。
+      <div style="text-align:center;margin-top:10px;">
+        <span style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="showForgot()">忘記密碼？</span>
+      </div>
+    </div>
+    <!-- Forgot password -->
+    <div id="auth-forgot" style="display:none;">
+      <div class="auth-err" id="forgot-err" style="color:var(--accent);"></div>
+      <div style="font-size:13px;color:var(--soft);margin-bottom:14px;">輸入你的電郵，我們會發送重設密碼連結。</div>
+      <input class="auth-input" id="forgot-email" type="email" placeholder="電郵地址" />
+      <button class="auth-btn" onclick="doForgot()">發送重設連結</button>
+      <div style="text-align:center;margin-top:12px;">
+        <span style="font-size:12px;color:var(--soft);cursor:pointer;" onclick="switchTab('login')">← 返回登入</span>
       </div>
     </div>
     <!-- Register -->
@@ -225,10 +231,20 @@
       <input class="auth-input" id="reg-email" type="email" placeholder="電郵地址" autocomplete="email" />
       <input class="auth-input" id="reg-pw" type="password" placeholder="密碼（至少6位）" autocomplete="new-password" />
       <input class="auth-input" id="reg-pw2" type="password" placeholder="確認密碼" autocomplete="new-password" />
-      <button class="auth-btn" onclick="doRegister()">建立帳號</button>
+      <button class="auth-btn" id="reg-btn" onclick="doRegister()">建立帳號</button>
       <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;text-align:left;">
-        💡 你的帳號和記錄儲存在這個瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄，以免資料丟失。
+        📧 註冊後會收到驗證郵件，請點擊連結完成驗證再登入。
       </div>
+    </div>
+    <!-- Email verification notice -->
+    <div id="auth-verify" style="display:none;text-align:center;">
+      <div style="font-size:40px;margin-bottom:16px;">📧</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;">請驗證你的電郵</div>
+      <div style="font-size:13px;color:var(--soft);line-height:1.8;margin-bottom:20px;">
+        我們已發送驗證連結到你的電郵。<br>
+        點擊連結後，回來登入即可。
+      </div>
+      <button class="auth-btn" onclick="switchTab('login')">返回登入</button>
     </div>
   </div>
 </div>
@@ -837,95 +853,112 @@ const PAGE_ICONS  = {home:"🌸",library:"🎧",diary:"🔥",challenge:"🏆",wi
 const PAGE_LABELS = {home:"首頁",library:"狂A播放器庫",diary:"狂A日記",challenge:"每月挑戰",wiki:"顯化百科",faq:"FAQ",stories:"成功案例牆",practices:"顯化練習庫",club:"百萬狂A俱樂部"};
 
 // ════════════════════════════════════════════════════════════════════════════
-// AUTH  (localStorage-based, no backend)
+// SUPABASE AUTH
 // ════════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://bjxnsbgydhipjaoyespw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqeG5zYmd5ZGhpcGphb3llc3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjYxODgsImV4cCI6MjA5NjQwMjE4OH0.5ItP7LBHFbaA-OH6jTCBvvmq75Ipvhl1OwWNoB8LgoM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
-// ── Storage helpers ───────────────────────────────────────────────────────────
-// Uses both localStorage (persistent) and sessionStorage (tab-level backup)
-function mlSet(key, val) {
-  const str = JSON.stringify(val);
-  try { localStorage.setItem(key, str); } catch(e) {}
-  try { sessionStorage.setItem(key, str); } catch(e) {}
+// ── Local data helpers (diary/favs stored in localStorage per user) ───────
+function getUserData(uid) {
+  try { return JSON.parse(localStorage.getItem('ml_data_' + uid) || 'null'); } catch(e) { return null; }
 }
-function mlGet(key) {
-  try {
-    const ls = localStorage.getItem(key);
-    if (ls) return JSON.parse(ls);
-  } catch(e) {}
-  try {
-    const ss = sessionStorage.getItem(key);
-    if (ss) return JSON.parse(ss);
-  } catch(e) {}
-  return null;
+function saveUserData(uid, data) {
+  try { localStorage.setItem('ml_data_' + uid, JSON.stringify(data)); } catch(e) {}
 }
-function mlRemove(key) {
-  try { localStorage.removeItem(key); } catch(e) {}
-  try { sessionStorage.removeItem(key); } catch(e) {}
-}
-
-function getUsers()  { return mlGet('ml_users') || {}; }
-function saveUsers(u){ mlSet('ml_users', u); }
-function getUserData(email){ return mlGet('ml_data_' + email); }
-function saveUserData(email, data){ mlSet('ml_data_' + email, data); }
-
 function defaultData() {
-  return { count:0, diary:[], favs:{}, story:"", joined: new Date().toLocaleDateString("zh-TW"), challengeStart: Date.now() };
+  return { diary:[], favs:{}, story:'', joined: new Date().toLocaleDateString('zh-TW'), challengeStart: Date.now() };
 }
 
 function switchTab(tab) {
-  document.getElementById('auth-login').style.display    = tab==='login'    ? '' : 'none';
-  document.getElementById('auth-register').style.display = tab==='register' ? '' : 'none';
-  document.getElementById('tab-login').classList.toggle('active',    tab==='login');
-  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  ['auth-login','auth-register','auth-forgot','auth-verify'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('auth-' + (tab === 'forgot' ? 'forgot' : tab === 'verify' ? 'verify' : tab)).style.display = '';
+  document.getElementById('tab-login').classList.toggle('active',    tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+}
+function showForgot() {
+  ['auth-login','auth-register','auth-forgot','auth-verify'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('auth-forgot').style.display = '';
 }
 
-function doLogin() {
-  const email  = document.getElementById('login-email').value.trim().toLowerCase();
-  const pw     = document.getElementById('login-pw').value;
-  const remember = document.getElementById('remember-me').checked;
-  const err    = document.getElementById('login-err');
-  const users  = getUsers();
-  if (!users[email]) { err.textContent = '找不到此帳號，請先註冊'; return; }
-  if (users[email].pw !== btoa(unescape(encodeURIComponent(pw)))) { err.textContent = '密碼錯誤'; return; }
+function setAuthLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? '請稍候…' : (btnId === 'login-btn' ? '登入' : '建立帳號');
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const err   = document.getElementById('login-err');
   err.textContent = '';
-  // Set session expiry
-  const expiry = remember ? Date.now() + 30*24*60*60*1000 : Date.now() + 24*60*60*1000;
-  loginSuccess(email, users[email].name, expiry);
+  if (!email || !pw) { err.textContent = '請填寫電郵和密碼'; return; }
+  setAuthLoading('login-btn', true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  setAuthLoading('login-btn', false);
+  if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      err.textContent = '請先驗證電郵，再登入';
+    } else if (error.message.includes('Invalid login')) {
+      err.textContent = '電郵或密碼錯誤';
+    } else {
+      err.textContent = error.message;
+    }
+    return;
+  }
+  const name = data.user.user_metadata?.name || email.split('@')[0];
+  loginSuccess(data.user.id, email, name);
 }
 
-function doRegister() {
+async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const email = document.getElementById('reg-email').value.trim();
   const pw    = document.getElementById('reg-pw').value;
   const pw2   = document.getElementById('reg-pw2').value;
   const err   = document.getElementById('reg-err');
+  err.textContent = '';
   if (!name)                { err.textContent = '請輸入暱稱'; return; }
   if (!email.includes('@')) { err.textContent = '請輸入有效電郵'; return; }
   if (pw.length < 6)        { err.textContent = '密碼至少6位'; return; }
   if (pw !== pw2)           { err.textContent = '兩次密碼不一致'; return; }
-  const users = getUsers();
-  if (users[email])         { err.textContent = '此電郵已被使用，請直接登入'; return; }
-  users[email] = { name, pw: btoa(unescape(encodeURIComponent(pw))) };
-  saveUsers(users);
-  saveUserData(email, defaultData());
-  err.textContent = '';
-  const expiry = Date.now() + 30*24*60*60*1000; // auto remember on register
-  loginSuccess(email, name, expiry);
+  setAuthLoading('reg-btn', true);
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw,
+    options: { data: { name }, emailRedirectTo: window.location.href }
+  });
+  setAuthLoading('reg-btn', false);
+  if (error) { err.textContent = error.message; return; }
+  // Show verify screen
+  switchTab('verify');
 }
 
-function loginSuccess(email, name, expiry) {
-  currentUser = { email, name };
-  const session = { email, name, expiry: expiry || Date.now() + 30*24*60*60*1000 };
-  mlSet('ml_session', session);
+async function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const err   = document.getElementById('forgot-err');
+  err.textContent = '';
+  if (!email.includes('@')) { err.textContent = '請輸入有效電郵'; return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+  if (error) { err.textContent = error.message; return; }
+  err.style.color = 'var(--accent)';
+  err.textContent = '✓ 重設連結已發送，請檢查電郵！';
+}
+
+function loginSuccess(uid, email, name) {
+  currentUser = { uid, email, name };
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('sidebar-username').textContent = '👤 ' + name;
+  // Init user data if first login
+  if (!getUserData(uid)) saveUserData(uid, defaultData());
   loadUserData();
   initApp();
 }
 
-function doLogout() {
-  mlRemove('ml_session');
+async function doLogout() {
+  await sb.auth.signOut();
   currentUser = null;
   closeSettings();
   location.reload();
@@ -933,20 +966,20 @@ function doLogout() {
 
 function loadUserData() {
   if (!currentUser) return;
-  const d = getUserData(currentUser.email) || defaultData();
-  myCount      = d.count  || 0;
+  const d = getUserData(currentUser.uid) || defaultData();
   diaryEntries = d.diary  || [];
   favs         = d.favs   || {};
-  const story  = d.story  || "";
-  document.getElementById('home-story').value = story;
+  const story  = d.story  || '';
+  const el = document.getElementById('home-story');
+  if (el) el.value = story;
 }
 
 function persist() {
   if (!currentUser) return;
-  const d = getUserData(currentUser.email) || defaultData();
-  d.count = myCount; d.diary = diaryEntries; d.favs = favs;
+  const d = getUserData(currentUser.uid) || defaultData();
+  d.diary = diaryEntries; d.favs = favs;
   d.story = document.getElementById('home-story') ? document.getElementById('home-story').value : (d.story||'');
-  saveUserData(currentUser.email, d);
+  saveUserData(currentUser.uid, d);
 }
 
 function saveStory() { persist(); }
@@ -956,11 +989,11 @@ function saveStory() { persist(); }
 // ════════════════════════════════════════════════════════════════════════════
 function openSettings() {
   if (!currentUser) return;
-  const d = getUserData(currentUser.email) || defaultData();
+  const d = getUserData(currentUser.uid) || defaultData();
   document.getElementById('settings-email').textContent  = currentUser.email;
   document.getElementById('settings-name').textContent   = currentUser.name;
   document.getElementById('settings-joined').textContent = d.joined || '—';
-  document.getElementById('settings-count').textContent  = (d.count||0).toLocaleString() + ' 次';
+  document.getElementById('settings-count').textContent  = getTotalFromDiary().toLocaleString() + ' 次';
   document.getElementById('settings-diary').textContent  = (d.diary||[]).length + ' 筆';
   document.getElementById('settings-overlay').classList.add('show');
 }
@@ -968,7 +1001,7 @@ function closeSettings() { document.getElementById('settings-overlay').classList
 
 function exportData() {
   if (!currentUser) return;
-  const d = getUserData(currentUser.email) || defaultData();
+  const d = getUserData(currentUser.uid) || defaultData();
   const blob = new Blob([JSON.stringify({ user: currentUser, data: d, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -979,8 +1012,8 @@ function exportData() {
 }
 function resetData() {
   if (!confirm('確定要重置所有數據嗎？此操作不可還原。')) return;
-  saveUserData(currentUser.email, defaultData());
-  myCount = 0; diaryEntries = []; favs = {};
+  saveUserData(currentUser.uid, defaultData());
+  diaryEntries = []; favs = {};
   document.getElementById('home-story').value = '';
   document.getElementById('count-display').textContent = '0';
   renderDiary(); renderMilestones();
@@ -1094,7 +1127,7 @@ function renderHome() {
        <span>${PAGE_LABELS[p]}</span>
      </div>`).join("");
   // challenge day counter
-  const d = currentUser ? (getUserData(currentUser.email)||defaultData()) : defaultData();
+  const d = currentUser ? (getUserData(currentUser.uid)||defaultData()) : defaultData();
   const dayNum = Math.min(Math.floor((Date.now()-(d.challengeStart||Date.now()))/(1000*60*60*24))+1, 21);
   const pct = Math.round(dayNum/21*100);
   const el = document.getElementById("challenge-day");
@@ -1396,25 +1429,25 @@ function initApp() {
   updateClub();
 }
 
-// Check existing session (with expiry check)
-const session = mlGet('ml_session');
-if (session && session.email) {
-  const users = getUsers();
-  const notExpired = !session.expiry || Date.now() < session.expiry;
-  if (users[session.email] && notExpired) {
-    currentUser = { email: session.email, name: session.name };
-    // Refresh session expiry on each visit
-    session.expiry = Date.now() + 30*24*60*60*1000;
-    mlSet('ml_session', session);
-    document.getElementById('auth-overlay').classList.add('hidden');
-    document.getElementById('sidebar-username').textContent = '👤 ' + session.name;
-    loadUserData();
-    initApp();
-  } else {
-    // Expired or user not found — clear and show login
-    mlRemove('ml_session');
+// ── Supabase session restore ─────────────────────────────────────────────
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) {
+    const u    = session.user;
+    const name = u.user_metadata?.name || u.email.split('@')[0];
+    loginSuccess(u.id, u.email, name);
   }
-}
+});
+// Listen for auth state changes (email verification redirect etc.)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+    const u    = session.user;
+    const name = u.user_metadata?.name || u.email.split('@')[0];
+    loginSuccess(u.id, u.email, name);
+  }
+  if (event === 'SIGNED_OUT') {
+    currentUser = null;
+  }
+});
 
 // Settings overlay close on bg click
 document.getElementById('settings-overlay').addEventListener('click', e => {
