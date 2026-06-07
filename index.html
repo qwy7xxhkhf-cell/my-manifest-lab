@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🌸 Manifest Lab</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #FAF7F2; --lav: #E8E0F0; --lavd: #C9B8E8;
+    --pink: #F2D4D7; --accent: #D4788A;
+    --text: #2C2640; --soft: #7A6E8A; --muted: #B0A8C0;
+    --white: #FFFFFF; --border: #EDE8F5;
+  }
+  body { font-family: Georgia, "Noto Serif TC", serif; background: var(--cream); color: var(--text); display: flex; min-height: 100vh; }
+
+  /* ── Auth overlay ─────────────────────────────────────────────────────────── */
+  #auth-overlay {
+    position: fixed; inset: 0; background: linear-gradient(135deg,#F5EEF8,#FAF0F4,#FDF8F0);
+    z-index: 999; display: flex; align-items: center; justify-content: center;
+  }
+  #auth-overlay.hidden { display: none; }
+  .auth-box {
+    background: #fff; border: 1px solid var(--border); border-radius: 24px;
+    padding: 40px 36px; width: 340px; max-width: 92vw; text-align: center;
+    box-shadow: 0 8px 40px rgba(212,120,138,0.1);
+  }
+  .auth-logo { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .auth-sub  { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 28px; }
+  .auth-tab  { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  .auth-tab-btn { flex: 1; padding: 10px; font-size: 13px; cursor: pointer; background: none; border: none; color: var(--muted); font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+  .auth-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .auth-input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-family: inherit; font-size: 13px; outline: none; color: var(--text); margin-bottom: 12px; }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 4px; transition: opacity 0.15s; }
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-err { font-size: 12px; color: #e05; margin-bottom: 10px; min-height: 18px; }
+  .auth-divider { font-size: 11px; color: var(--muted); margin: 16px 0 4px; }
+
+  /* ── Settings modal ───────────────────────────────────────────────────────── */
+  #settings-overlay { position: fixed; inset: 0; background: rgba(44,38,64,0.3); z-index: 500; display: none; align-items: center; justify-content: center; }
+  #settings-overlay.show { display: flex; }
+  .settings-box { background: #fff; border-radius: 20px; padding: 32px; width: 360px; max-width: 92vw; }
+  .settings-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { color: var(--text); font-weight: 500; }
+  .settings-value { color: var(--muted); font-size: 12px; }
+  .settings-btn { background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 5px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .settings-danger { color: #e05; border-color: #e05; }
+  .settings-close { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 11px; font-size: 13px; cursor: pointer; font-family: inherit; margin-top: 16px; }
+
+  /* ── Sidebar ──────────────────────────────────────────────────────────────── */
+  #sidebar { width: 222px; background: var(--white); border-right: 1px solid var(--border); padding: 32px 0; position: fixed; top: 0; bottom: 0; overflow-y: auto; z-index: 100; display: flex; flex-direction: column; }
+  .logo { padding: 0 24px 20px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .logo h1 { font-size: 17px; font-weight: 700; }
+  .logo p  { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 3px; }
+  .logo-user { font-size: 11px; color: var(--accent); margin-top: 8px; font-weight: 600; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 24px; font-size: 12.5px; cursor: pointer; color: var(--soft); border-left: 3px solid transparent; transition: all 0.2s; }
+  .nav-item:hover { color: var(--accent); background: #FDF0F2; }
+  .nav-item.active { color: var(--accent); background: #FDF0F2; border-left-color: var(--accent); font-weight: 600; }
+  .nav-settings { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
+
+  /* ── Main ─────────────────────────────────────────────────────────────────── */
+  #main { margin-left: 222px; flex: 1; padding: 48px 56px; max-width: 960px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Cards & grids ────────────────────────────────────────────────────────── */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .tag { display: inline-block; background: var(--lav); color: var(--soft); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 600; }
+  .tag-pink { background: var(--pink); }
+
+  /* ── Buttons ──────────────────────────────────────────────────────────────── */
+  .btn { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 10px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 18px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn-ghost.active-dur { background: var(--accent); color: #fff; }
+  .btn:hover { opacity: 0.88; }
+
+  /* ── Inputs ───────────────────────────────────────────────────────────────── */
+  input, textarea { border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-family: inherit; font-size: 13px; outline: none; color: var(--text); width: 100%; }
+  textarea { resize: vertical; line-height: 1.8; }
+
+  /* ── Page titles ──────────────────────────────────────────────────────────── */
+  .page-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; font-style: italic; }
+
+  /* ── Hero ─────────────────────────────────────────────────────────────────── */
+  .hero { background: linear-gradient(135deg, #F5EEF8, #FAF0F4, #FDF8F0); border-radius: 24px; padding: 48px 40px; text-align: center; border: 1px solid var(--border); margin-bottom: 28px; }
+  .hero-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.16em; margin-bottom: 14px; }
+  .hero-t1 { font-size: 36px; font-weight: 700; line-height: 1.3; }
+  .hero-t2 { font-size: 36px; font-weight: 700; color: var(--accent); line-height: 1.3; }
+
+  /* ── Progress bar ─────────────────────────────────────────────────────────── */
+  .prog-track { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--lavd), var(--accent)); border-radius: 4px; transition: width 0.5s; }
+
+  /* ── Audio bar ────────────────────────────────────────────────────────────── */
+  #audio-bar { display: none; background: var(--accent); border-radius: 16px; padding: 14px 22px; margin-bottom: 18px; }
+  #audio-bar.show { display: block; }
+  #audio-bar .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #audio-bar .info { color: #fff; font-size: 13px; font-weight: 600; }
+  #audio-bar .timer { color: #fff; font-size: 12px; font-family: monospace; }
+  #audio-bar .stop-btn { background: transparent; color: #fff; border: 1px solid #fff; border-radius: 8px; padding: 4px 12px; font-size: 11px; cursor: pointer; }
+  #audio-bar .prog-track { background: rgba(255,255,255,0.3); }
+  #audio-bar .prog-fill { background: #fff; }
+
+  /* ── Affirmation card ─────────────────────────────────────────────────────── */
+  .aff-card { background: linear-gradient(135deg, #FAF0F4, #F5EEF8); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: border-color 0.2s; }
+  .aff-card.playing { border-color: var(--accent); }
+  .aff-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .fav-btn { font-size: 18px; cursor: pointer; background: none; border: none; }
+  .aff-text { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.5; margin-bottom: 16px; }
+  .play-btn { width: 100%; text-align: center; }
+
+  /* ── Wiki ─────────────────────────────────────────────────────────────────── */
+  .wiki-card { cursor: pointer; transition: border-color 0.2s; }
+  .wiki-card.open { border-color: var(--accent); }
+  .wiki-def { font-size: 13px; color: var(--soft); line-height: 1.9; white-space: pre-line; margin-bottom: 12px; }
+  .wiki-eg { background: #FAF0F4; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--soft); font-style: italic; }
+
+  /* ── FAQ ──────────────────────────────────────────────────────────────────── */
+  .faq-item { cursor: pointer; }
+  .faq-q { display: flex; justify-content: space-between; align-items: center; }
+  .faq-a { font-size: 13px; color: var(--soft); line-height: 1.9; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; display: none; }
+
+  /* ── Story card ───────────────────────────────────────────────────────────── */
+  .story-card { background: linear-gradient(135deg, #FAF0F4, #F5EEF8); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+  .story-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 4px; margin-top: 14px; text-transform: uppercase; }
+  .story-body { font-size: 13px; color: var(--soft); line-height: 1.8; }
+  .story-key { background: var(--lav); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--soft); line-height: 1.7; margin-top: 12px; }
+  .story-result { font-size: 14px; color: var(--accent); font-weight: 600; line-height: 1.7; }
+
+  /* ── Nav quick cards ──────────────────────────────────────────────────────── */
+  .nav-card { cursor: pointer; border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; display: flex; align-items: center; gap: 10px; background: var(--white); transition: border-color 0.2s; }
+  .nav-card:hover { border-color: var(--accent); }
+  .nav-card span:last-child { font-size: 12px; font-weight: 500; }
+
+  /* ── Filter row ───────────────────────────────────────────────────────────── */
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+
+  /* ── Milestone card ───────────────────────────────────────────────────────── */
+  .ms-card { text-align: center; padding: 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--white); transition: all 0.2s; }
+  .ms-card.reached { background: linear-gradient(135deg, #F5EEF8, #FAF0F4); border-color: var(--accent); }
+  .ms-card.dim { opacity: 0.4; }
+
+  /* ── Diary entry ──────────────────────────────────────────────────────────── */
+  .diary-entry { display: flex; align-items: center; gap: 16px; padding: 14px 22px; margin-bottom: 10px; }
+
+  /* ── Copy btn ─────────────────────────────────────────────────────────────── */
+  .copy-btn { color: var(--accent); }
+  .copy-btn.done { color: #6cc26c; }
+
+  /* ── Mobile ───────────────────────────────────────────────────────────────── */
+  @media (max-width: 680px) {
+    body { flex-direction: column; padding-bottom: 64px; }
+    #sidebar { width: 100%; height: 64px; position: fixed; top: auto; bottom: 0; left: 0; right: 0; flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0; border-right: none; border-top: 1px solid var(--border); z-index: 200; scrollbar-width: none; }
+    #sidebar::-webkit-scrollbar { display: none; }
+    .logo { display: none; }
+    .nav-settings { display: none; }
+    .nav-item { flex-direction: column; gap: 2px; padding: 8px 14px; font-size: 9px; border-left: none; border-top: 3px solid transparent; white-space: nowrap; flex-shrink: 0; min-width: 56px; justify-content: center; align-items: center; }
+    .nav-item.active { border-left: none; border-top-color: var(--accent); background: #FDF0F2; }
+    .nav-item span:first-child { font-size: 20px; }
+    #main { margin-left: 0; padding: 20px 16px; max-width: 100%; }
+    .g2, .g3 { grid-template-columns: 1fr; }
+    .hero { padding: 32px 20px; margin-bottom: 20px; }
+    .hero-t1, .hero-t2 { font-size: 28px; }
+    .page-title { font-size: 22px; }
+    .card { padding: 18px 16px; }
+    #audio-bar .row { flex-wrap: wrap; gap: 8px; }
+    .filter-row .btn, .filter-row .btn-ghost { padding: 5px 10px; font-size: 10px; }
+    .diary-entry { flex-wrap: wrap; padding: 14px 16px; }
+    .dur-btn { padding: 6px 12px !important; font-size: 11px !important; }
+    #milestones { grid-template-columns: 1fr 1fr; }
+    #quick-nav { grid-template-columns: 1fr 1fr !important; }
+    .auth-box { padding: 32px 24px; }
+    .settings-box { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH OVERLAY ──────────────────────────────────────────────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">🌸 Manifest Lab</div>
+    <div class="auth-sub">停止找方法，開始持續。</div>
+    <div class="auth-tab">
+      <button class="auth-tab-btn active" id="tab-login" onclick="switchTab('login')">登入</button>
+      <button class="auth-tab-btn" id="tab-register" onclick="switchTab('register')">註冊</button>
+    </div>
+    <!-- Login -->
+    <div id="auth-login">
+      <div class="auth-err" id="login-err"></div>
+      <input class="auth-input" id="login-email" type="email" placeholder="電郵地址" />
+      <input class="auth-input" id="login-pw" type="password" placeholder="密碼" />
+      <button class="auth-btn" onclick="doLogin()">登入</button>
+      <div class="auth-divider">還沒有帳號？<span style="color:var(--accent);cursor:pointer;" onclick="switchTab('register')">立即註冊</span></div>
+    </div>
+    <!-- Register -->
+    <div id="auth-register" style="display:none;">
+      <div class="auth-err" id="reg-err"></div>
+      <input class="auth-input" id="reg-name" type="text" placeholder="暱稱（顯示用）" />
+      <input class="auth-input" id="reg-email" type="email" placeholder="電郵地址" />
+      <input class="auth-input" id="reg-pw" type="password" placeholder="密碼（至少6位）" />
+      <input class="auth-input" id="reg-pw2" type="password" placeholder="確認密碼" />
+      <button class="auth-btn" onclick="doRegister()">建立帳號</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ─────────────────────────────────────────────────────────── -->
+<div id="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-title">⚙️ 設定</div>
+    <div class="settings-row">
+      <span class="settings-label">帳號</span>
+      <span class="settings-value" id="settings-email"></span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">暱稱</span>
+      <span class="settings-value" id="settings-name"></span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">加入日期</span>
+      <span class="settings-value" id="settings-joined"></span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">狂A總次數</span>
+      <span class="settings-value" id="settings-count"></span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">日記記錄</span>
+      <span class="settings-value" id="settings-diary"></span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">重置所有數據</span>
+      <button class="settings-btn settings-danger" onclick="resetData()">重置</button>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">登出</span>
+      <button class="settings-btn" onclick="doLogout()">登出</button>
+    </div>
+    <button class="settings-close" onclick="closeSettings()">關閉</button>
+  </div>
+</div>
+
+<!-- ── SIDEBAR ────────────────────────────────────────────────────────────────── -->
+<div id="sidebar">
+  <div class="logo">
+    <h1>Manifest Lab</h1>
+    <p>停止找方法，開始持續。</p>
+    <div class="logo-user" id="sidebar-username"></div>
+  </div>
+  <div class="nav-item active" data-page="home">    <span>🌸</span><span>首頁</span></div>
+  <div class="nav-item" data-page="library">         <span>🎧</span><span>狂A播放器庫</span></div>
+  <div class="nav-item" data-page="diary">           <span>🔥</span><span>狂A日記</span></div>
+  <div class="nav-item" data-page="challenge">       <span>🏆</span><span>每月挑戰</span></div>
+  <div class="nav-item" data-page="wiki">            <span>📚</span><span>顯化百科</span></div>
+  <div class="nav-item" data-page="faq">             <span>❓</span><span>FAQ</span></div>
+  <div class="nav-item" data-page="stories">         <span>🌟</span><span>成功案例牆</span></div>
+  <div class="nav-item" data-page="practices">       <span>📖</span><span>顯化練習庫</span></div>
+  <div class="nav-item" data-page="club">            <span>🏅</span><span>百萬狂A俱樂部</span></div>
+  <div class="nav-settings">
+    <div class="nav-item" onclick="openSettings()">  <span>⚙️</span><span>設定</span></div>
+  </div>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────────────────────────── -->
+<div id="main">
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-tag">MANIFEST LAB</div>
+    <div class="hero-t1">停止找方法，</div>
+    <div class="hero-t2">開始持續。</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,#E8E0F0,#F2D4D7);text-align:center;padding:28px 32px;">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:0.14em;margin-bottom:14px;">TODAY'S REMINDER</div>
+    <div id="daily-reminder" style="font-size:19px;font-weight:600;font-style:italic;line-height:1.7;"></div>
+  </div>
+  <div class="g2" style="margin:16px 0;">
+    <div class="card">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:0.1em;margin-bottom:14px;">MY CURRENT STORY</div>
+      <div style="font-size:12px;color:var(--soft);margin-bottom:10px;font-style:italic;">我今天選擇的故事是……</div>
+      <textarea id="home-story" rows="4" placeholder="在這裡寫下你的新故事……" style="background:#FDFBFF;" oninput="saveStory()"></textarea>
+    </div>
+    <div class="card" style="background:linear-gradient(160deg,#FDF8F0,#FAF0F4);text-align:center;display:flex;flex-direction:column;justify-content:center;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:0.14em;margin-bottom:16px;">MONTHLY FOCUS</div>
+      <div style="font-size:28px;margin-bottom:8px;">✨</div>
+      <div style="font-size:18px;font-weight:700;">所有事情如我所願</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">本月挑戰 · 21 Days</div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--muted);letter-spacing:0.12em;margin-bottom:14px;">QUICK NAVIGATION</div>
+  <div class="g3" id="quick-nav"></div>
+</div>
+
+<!-- LIBRARY -->
+<div id="page-library" class="page">
+  <div class="page-title">🎧 狂A播放器庫</div>
+  <div class="page-sub">選一句，設定時間，讓語音幫你持續重複</div>
+  <div class="card" style="background:linear-gradient(135deg,#F5EEF8,#FAF0F4);margin-bottom:20px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:14px;">播放設定</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:12px;color:var(--soft);margin-right:4px;">時長：</span>
+      <button class="btn-ghost dur-btn active-dur" data-dur="3">3 分鐘</button>
+      <button class="btn-ghost dur-btn" data-dur="5">5 分鐘</button>
+      <button class="btn-ghost dur-btn" data-dur="10">10 分鐘</button>
+      <button class="btn-ghost dur-btn" data-dur="30">30 分鐘</button>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <input id="custom-aff" placeholder="輸入自定義狂A句……" style="flex:1;" />
+      <button class="btn" id="custom-play-btn" onclick="toggleCustom()">▶ 播放</button>
+    </div>
+  </div>
+  <div id="audio-bar">
+    <div class="row">
+      <span class="info" id="audio-info">▶ 播放中</span>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span class="timer" id="audio-timer">00:00 / 00:00</span>
+        <button class="stop-btn" onclick="stopAudio()">停止</button>
+      </div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="audio-prog" style="width:0%"></div></div>
+  </div>
+  <div class="filter-row" id="lib-filters"></div>
+  <div class="g2" id="aff-cards"></div>
+</div>
+
+<!-- DIARY -->
+<div id="page-diary" class="page">
+  <div class="page-title">🔥 狂A日記</div>
+  <div class="page-sub">記錄每一天 · 持續才是你唯一的工作</div>
+  <!-- Calculator card -->
+  <div class="card" style="background:linear-gradient(135deg,#F5EEF8,#FAF0F4);margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:14px;">🧮 次數計算器</div>
+    <div style="font-size:11px;color:var(--soft);margin-bottom:12px;">不知道喊了幾次？根據速度和時間自動計算！</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        <span style="font-size:12px;color:var(--soft);white-space:nowrap;">每分鐘重複</span>
+        <input id="calc-speed" type="number" placeholder="次" min="1" max="200" style="width:64px;text-align:center;" oninput="calcCount()" />
+        <span style="font-size:12px;color:var(--soft);">次</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        <span style="font-size:12px;color:var(--soft);white-space:nowrap;">練習了</span>
+        <input id="calc-mins" type="number" placeholder="分鐘" min="1" style="width:64px;text-align:center;" oninput="calcCount()" />
+        <span style="font-size:12px;color:var(--soft);">分鐘</span>
+      </div>
+    </div>
+    <!-- Speed presets -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-right:2px;">速度：</span>
+      <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="setSpeed(10)">慢 10/分</button>
+      <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="setSpeed(20)">中 20/分</button>
+      <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="setSpeed(30)">快 30/分</button>
+      <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="setSpeed(50)">極速 50/分</button>
+    </div>
+    <div id="calc-result" style="display:none;background:#fff;border-radius:12px;padding:14px 18px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">估計總次數</div>
+      <div id="calc-count-display" style="font-size:36px;font-weight:700;color:var(--accent);"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="calc-breakdown"></div>
+      <button class="btn" style="margin-top:12px;padding:7px 20px;font-size:12px;" onclick="useCalcCount()">用這個次數記錄 →</button>
+    </div>
+  </div>
+
+  <!-- 思想飽和計劃 -->
+  <div class="card" style="background:linear-gradient(135deg,#FDF8F0,#FAF0F4);margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px;">🧠 為什麼要思想飽和？</div>
+    <div style="font-size:12px;color:var(--soft);line-height:1.9;margin-bottom:14px;">人每天有 <strong style="color:var(--accent);">6萬個念頭</strong>，但其中 <strong style="color:var(--accent);">90%</strong> 是反覆重複的，<strong style="color:var(--accent);">80%</strong> 是負面的。<br>思想飽和不是極端方法——你只是用新的念頭取代舊的，而且完全不影響日常生活。<br>不需要用腦子的時候（走路、做家務、洗澡、通勤），就是狂A的黃金時段。</div>
+
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;">🎯 每日思想飽和目標：最少 2 小時</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">2小時聽起來很多？其實你每天有大量「腦子放空」的時間，把它們加起來輕鬆超過2小時。</div>
+
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;">⏰ 每日三次專注 A 計劃</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <div style="background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;">
+        <span style="font-size:22px;">🌅</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">早上 · 起床後 10 分鐘</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">睡醒後潛意識最開放，是植入新假設的黃金時刻</div>
+        </div>
+        <div id="plan-morning" style="font-size:18px;cursor:pointer;" onclick="togglePlan('morning')">⬜</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;">
+        <span style="font-size:22px;">☀️</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">中午 · 任何空檔 10 分鐘</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">午飯後、通勤、洗手間——隨時隨地，腦中默念</div>
+        </div>
+        <div id="plan-noon" style="font-size:18px;cursor:pointer;" onclick="togglePlan('noon')">⬜</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;">
+        <span style="font-size:22px;">🌙</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">晚上 · 睡前 10 分鐘</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">帶著新故事入睡，潛意識整晚繼續消化</div>
+        </div>
+        <div id="plan-night" style="font-size:18px;cursor:pointer;" onclick="togglePlan('night')">⬜</div>
+      </div>
+    </div>
+
+    <div id="plan-done-msg" style="display:none;text-align:center;padding:10px;background:linear-gradient(135deg,#F5EEF8,#FAF0F4);border-radius:10px;font-size:13px;color:var(--accent);font-weight:600;">
+      🌸 今日三次專注 A 完成！持續創造自然感。
+    </div>
+
+    <div style="font-size:11px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+      💡 <strong>其他狂A時段建議：</strong>走路、做家務、洗澡、通勤、排隊、等電梯、做運動——這些時間腦子放空，正是思想飽和的最佳時機。
+    </div>
+  </div>
+
+  <!-- Entry card -->
+  <div class="card" style="margin-bottom:18px;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:14px;">今日記錄</div>
+    <input id="d-aff" placeholder="今日狂A句" style="margin-bottom:10px;" />
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">次數</div>
+        <input id="d-count" type="number" placeholder="輸入或用計算器" style="width:100%;" />
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">分鐘</div>
+        <input id="d-mins" type="number" placeholder="分鐘" style="width:100%;" />
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="mood-btns" style="display:flex;gap:6px;">
+        <button class="fav-btn mood-btn" data-mood="🌸" style="opacity:1;">🌸</button>
+        <button class="fav-btn mood-btn" data-mood="✨" style="opacity:0.3;">✨</button>
+        <button class="fav-btn mood-btn" data-mood="🌙" style="opacity:0.3;">🌙</button>
+        <button class="fav-btn mood-btn" data-mood="💫" style="opacity:0.3;">💫</button>
+        <button class="fav-btn mood-btn" data-mood="🔥" style="opacity:0.3;">🔥</button>
+      </span>
+      <input id="d-note" placeholder="備註" style="flex:1;" />
+      <button class="btn" onclick="addDiary()">記錄</button>
+    </div>
+  </div>
+
+  <!-- Total banner -->
+  <div id="diary-total-banner" style="display:none;background:linear-gradient(135deg,#FAF0F4,#F5EEF8);border:1px solid var(--border);border-radius:14px;padding:14px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:12px;color:var(--soft);">📊 日記總計</div>
+    <div style="font-size:18px;font-weight:700;color:var(--accent);" id="diary-total-count">0 次</div>
+  </div>
+
+  <div id="diary-list"></div>
+</div>
+
+<!-- CHALLENGE -->
+<div id="page-challenge" class="page">
+  <div class="page-title">🏆 每月挑戰</div>
+  <div class="page-sub">選一句，堅持21天 · 你不需要相信，你只需要持續</div>
+  <div class="card" style="background:linear-gradient(135deg,#F5EEF8,#FAF0F4);text-align:center;padding:32px;margin-bottom:28px;">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:0.14em;margin-bottom:10px;">CURRENT CHALLENGE</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:6px;">✨ 所有事情如我所願</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;" id="challenge-day">Day 1 / 21</div>
+    <div class="prog-track"><div class="prog-fill" id="challenge-prog" style="width:5%"></div></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="challenge-left">繼續持續</div>
+  </div>
+  <div class="g2">
+    <div class="card" style="margin-bottom:0;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">✨ 我永遠被選擇</div>
+      <div class="prog-track"><div class="prog-fill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">0/21 天</div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">✨ 我總是得到想要的結果</div>
+      <div class="prog-track"><div class="prog-fill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">0/30 天</div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">✨ 一切都為我服務</div>
+      <div class="prog-track"><div class="prog-fill" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">0/21 天</div>
+    </div>
+  </div>
+</div>
+
+<!-- WIKI -->
+<div id="page-wiki" class="page">
+  <div class="page-title">📚 顯化百科</div>
+  <div class="page-sub">Law of Assumption 核心詞典 · 每一個概念都是一把鑰匙</div>
+  <div class="g2" id="wiki-cards"></div>
+</div>
+
+<!-- FAQ -->
+<div id="page-faq" class="page">
+  <div class="page-title">❓ FAQ</div>
+  <div class="page-sub">你最常問的問題 · 直接、簡單、令人安心</div>
+  <div class="filter-row" id="faq-filters"></div>
+  <div id="faq-list"></div>
+</div>
+
+<!-- STORIES -->
+<div id="page-stories" class="page">
+  <div class="page-title">🌟 成功案例牆</div>
+  <div class="page-sub">真實發生過的事 · 笨但有效 · 你也可以</div>
+  <div id="story-cards"></div>
+</div>
+
+<!-- PRACTICES -->
+<div id="page-practices" class="page">
+  <div class="page-title">📖 顯化練習庫</div>
+  <div class="page-sub">選一個練習，按步驟完成 · 在這裡寫，不需要離開</div>
+  <div class="filter-row" id="practice-filters"></div>
+  <div id="practice-list"></div>
+</div>
+
+<!-- CLUB -->
+<div id="page-club" class="page">
+  <div class="page-title">🏅 百萬狂A俱樂部</div>
+  <div class="page-sub">記錄你的累積次數 · 重複創造自然感，自然感創造現實</div>
+  <div class="card" style="background:linear-gradient(135deg,#F5EEF8,#FAF0F4);text-align:center;padding:32px;margin-bottom:16px;">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:0.14em;margin-bottom:12px;">MY TOTAL COUNT</div>
+    <div id="count-display" style="font-size:52px;font-weight:700;color:var(--accent);margin-bottom:8px;">0</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">從狂A日記自動加總</div>
+    <div style="font-size:11px;color:var(--soft);" id="club-diary-count"></div>
+  </div>
+  <div class="card" style="margin-bottom:28px;padding:16px 20px;">
+    <div style="font-size:12px;color:var(--soft);line-height:1.8;">
+      💡 每次在<strong>狂A日記</strong>記錄次數，這裡會自動更新。<br>
+      記錄越多，里程碑越快解鎖 🌸
+    </div>
+  </div>
+  <div class="g2" id="milestones"></div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════════════════
+const DAILY = [
+  "Circumstances don't matter.",
+  "持續，是你唯一的工作。",
+  "3D只是舊假設的回聲，不是真相。",
+  "你不需要感受到。你只需要假設。",
+  "停止對3D作出反應。從你的假設生活。",
+  "你已經是那個版本的自己了。",
+  "Keep telling the new story.",
+  "你不需要知道怎麼發生。只需要假設已發生。",
+];
+
+const AFFIRMATIONS = [
+  // ❤️ SP
+  {id:1,  cat:"❤️ SP", text:"SP愛我"},
+  {id:2,  cat:"❤️ SP", text:"我是SP的唯一"},
+  {id:3,  cat:"❤️ SP", text:"SP選擇我"},
+  {id:4,  cat:"❤️ SP", text:"SP只愛我一個人"},
+  {id:5,  cat:"❤️ SP", text:"SP和我在一起"},
+  {id:6,  cat:"❤️ SP", text:"SP和我結婚了"},
+  {id:7,  cat:"❤️ SP", text:"SP永遠回到我身邊"},
+  {id:8,  cat:"❤️ SP", text:"SP主動聯絡我"},
+  {id:9,  cat:"❤️ SP", text:"SP離開了她，選擇了我"},
+  {id:10, cat:"❤️ SP", text:"SP深深愛著我"},
+  {id:11, cat:"❤️ SP", text:"我永遠是SP的第一選擇"},
+  {id:12, cat:"❤️ SP", text:"SP和我的關係完美和諧"},
+  {id:13, cat:"❤️ SP", text:"SP每天都想見到我"},
+  {id:14, cat:"❤️ SP", text:"SP對我忠誠"},
+  {id:15, cat:"❤️ SP", text:"SP為我改變"},
+  // 🌸 Self Concept
+  {id:16, cat:"🌸 Self Concept", text:"我天生值得最好的一切"},
+  {id:17, cat:"🌸 Self Concept", text:"我是一個永遠被愛的人"},
+  {id:18, cat:"🌸 Self Concept", text:"我總是得到我想要的結果"},
+  {id:19, cat:"🌸 Self Concept", text:"我值得被選擇"},
+  {id:20, cat:"🌸 Self Concept", text:"我是不可抗拒的"},
+  {id:21, cat:"🌸 Self Concept", text:"所有事情都為我服務"},
+  {id:22, cat:"🌸 Self Concept", text:"我的人生越來越好"},
+  {id:23, cat:"🌸 Self Concept", text:"我是一個充滿魅力的人"},
+  // 💰 Money
+  {id:24, cat:"💰 Money", text:"金錢總是輕鬆流向我"},
+  {id:25, cat:"💰 Money", text:"所有事情如我所願，包括金錢"},
+  {id:26, cat:"💰 Money", text:"我永遠有足夠的錢"},
+  {id:27, cat:"💰 Money", text:"意外之財不斷找上我"},
+  {id:28, cat:"💰 Money", text:"我是豐盛的人"},
+  {id:41, cat:"💰 Money", text:"我是億萬富翁"},
+  {id:42, cat:"💰 Money", text:"我有源源不絕的錢"},
+  {id:43, cat:"💰 Money", text:"錢很愛我"},
+  {id:44, cat:"💰 Money", text:"錢不斷主動找上我"},
+  {id:45, cat:"💰 Money", text:"我輕鬆賺大錢"},
+  {id:46, cat:"💰 Money", text:"財富是我的本來狀態"},
+  {id:47, cat:"💰 Money", text:"我的銀行帳戶不斷增長"},
+  {id:48, cat:"💰 Money", text:"賺錢對我來說輕鬆自然"},
+  // 🏡 Dream Life
+  {id:29, cat:"🏡 Dream Life", text:"我的夢想生活是我的現實"},
+  {id:30, cat:"🏡 Dream Life", text:"我的人生永遠站在我這邊"},
+  {id:31, cat:"🏡 Dream Life", text:"一切都如我所願"},
+  {id:32, cat:"🏡 Dream Life", text:"我住在我夢想的家"},
+  {id:33, cat:"🏡 Dream Life", text:"我的生活輕鬆愉快"},
+  // 💼 Career
+  {id:34, cat:"💼 Career", text:"我是任何機構都夢寐以求的人才"},
+  {id:35, cat:"💼 Career", text:"機會總是主動找上我"},
+  {id:36, cat:"💼 Career", text:"我在工作上永遠成功"},
+  // 🌿 General
+  {id:37, cat:"🌿 General", text:"一切都為我服務，一切都對我有利"},
+  {id:38, cat:"🌿 General", text:"我總是在對的時間出現在對的地方"},
+  {id:39, cat:"🌿 General", text:"我的假設永遠成真"},
+  {id:40, cat:"🌿 General", text:"我的現實永遠反映我最好的假設"},
+]
+
+
+
+const WIKI = [
+  {term:"假設 Assumption", def:"你假設什麼，那就是你的現實。假設是主動選擇的，不是被動感受的。你的外在世界只是你內心假設的印出——不是吸引，是印出。\n\n假設不需要感受到。你只需要在腦海中接受它為事實，然後持續。", eg:"不是「我希望他愛我」→ 是「他愛我，這是事實」"},
+  {term:"EIYPO", def:"Everyone Is You Pushed Out。每個人都是你推出去的，都是你內心假設的投射。\n\nSP的行為只是你自己對自己的信念的反映。你不需要去影響SP——只需要改變你對這段關係的假設。改變自己，SP的行為必然改變。", eg:"SP已讀不回 → 不是他的問題 → 是你對「自己是否被選擇」的假設在作用"},
+  {term:"4D vs 3D", def:"4D是你的想像力世界（內心），是真實的。3D是外在世界，是你過去假設的印出，是舊的。\n\n不要用3D去判斷你的顯化進度。把注意力放在4D（你想要的現實），而不是3D的當前狀況。", eg:"SP沒有回覆（3D）→ 不重要 → 你在4D的假設是什麼才重要"},
+  {term:"Self Concept", def:"你對自己的整體信念和看法。Self concept 是顯化的輔助工具，而不是前提條件——你不需要先有完美的self concept 才能顯化SP。\n\n事實上，兩者是相輔相成的：當你顯化SP成功，你的self concept 自然會增強；當你的self concept 提升，顯化會更順暢。它們是並行的，不是先後關係。\n\n實際上，即使self concept 強大，你仍然可以對某個特定的人有執著和渴望——這是正常的。Self concept 的作用是幫助你相信自己值得被愛，而不是消滅你對某人的感情。", eg:"不需要「先建立完美self concept 再顯化SP」→ 兩者同步進行，互相強化"},
+  {term:"Persist 持續", def:"當3D出現舊的狀況時，你繼續選擇你的新假設。這是你唯一的工作。\n\n持續不是努力，不是強迫自己相信。持續是：3D出現了挑戰，你承認它，然後繼續告訴你的新故事。", eg:"3D很難看 → 承認它 → 繼續假設 → 這就是持續"},
+  {term:"Circumstances 環境", def:"Circumstances do not matter. 環境是舊的，是你過去假設已經印出的結果，不代表你的未來。\n\n停止用環境去決定你應該假設什麼。你的假設創造環境，不是環境決定假設。", eg:"他有別人了（環境）→ 不重要 → 繼續你的新假設 → 環境必須重新排列"},
+  {term:"State 狀態", def:"你現在居住在哪一個意識狀態，那個狀態就是你在假設什麼，也是你的現實在印出的方向。\n\n進入你想要的狀態——不是等感受到，是假設你已經在那個狀態中。", eg:"不是等他愛我才感覺被愛 → 現在就居住在「我永遠被愛」的狀態"},
+  {term:"Bridge of Incidents", def:"從你的假設到3D顯化之間，會自然出現一連串的事件，那就是橋。你不需要知道橋的樣子，不需要計劃怎麼發生。\n\n你只需要假設已經在你想要的結果，讓意識去安排橋。橋是自動的。", eg:"不需要想「他怎麼可能回來」→ 只需要假設「我們在一起」→ 橋會自動出現"},
+  {term:"New Story 新故事", def:"你選擇告訴自己的新版本故事。用現在式，用確定語氣，像在說顯而易見的事實。\n\n停止講舊故事。每次你講舊故事，就是在強化舊假設。新故事是你選擇認為的事實，每次選擇都在建立新的假設。", eg:"舊：「他一直忽略我」→ 新：「他永遠關注我，我是他的第一優先」"},
+  {term:"狂A / 思想飽和", def:"重複肯定句，讓新的假設在腦中變成背景音，直到它感覺自然為止。\n\n不用冥想、不用做複雜練習，只要選一句，然後在腦中不斷重複。重複夠多次後，情緒開始變了，阻力開始消失。這就是思想飽和的力量。\n\n重要的是語氣：不是「希望」的語氣，是「說事實」的語氣。", eg:"「他跟她分開了。」——面無表情地重複，像跳針錄音帶，24/7"},
+  {term:"Mental Diet 思想飲食", def:"你的每一個念頭，都是你在餵食自己的假設系統。Mental Diet 就是控制你腦中的食物——只吃你想要的念頭，掐掉你不想要的。\n\n當一個舊的、負面的念頭冒出來，不是壓制它，而是像按靜音一樣——承認它出現了，然後平靜地切換回你的新假設。不批判自己，只是持續切換。\n\nMental Diet 不是24小時零負面，而是：負面念頭冒出來的時候，你不跟它走。", eg:"念頭：「他不會回來的…」→ 掐掉 → 切換：「他已經選擇我了」→ 繼續日常"},
+  {term:"轉念 / 轉頻道", def:"轉念不是假裝沒事，是主動選擇播放哪個頻道。你的腦袋隨時在播某個故事——舊頻道還是新頻道，由你決定。\n\n每次舊畫面、舊念頭冒出來，不要跟它辯論，不要分析它，直接——轉台。像遙控器一樣，按一下，切回你要的畫面。\n\n轉念越快，3D的改變越快。因為你餵食新假設的時間越多，它越快印出。", eg:"他沒回訊（舊頻道播放中）→ 遙控器按下 → 新頻道：「他永遠想回應我」"},
+  {term:"視覺化 Visualization", def:"在腦海中清晰地播放你想要的現實畫面，包含畫面、聲音、感覺，讓4D的體驗變得真實。\n\n視覺化不是「想像一下」，是全身心進入那個場景：你看到什麼？聽到什麼？他說了什麼？你的感覺是什麼？越具體越好。\n\n視覺化的目的是讓你的意識真正居住在那個現實裡，而不只是在外面看著它。短短5分鐘，但要全力投入。", eg:"視覺化他主動傳訊給你——想像看到他名字出現、讀到那些話、你心裡的感覺……"},
+  {term:"限制性信念 Limiting Belief", def:"那些你以為是「事實」但其實只是「舊假設」的信念。它們不是真相，只是你重複了太多次、開始覺得理所當然的故事。\n\n常見的限制性信念：「像我這樣的人不值得被愛」「好的感情跟我沒緣份」「他不可能選我」「我就是賺不了錢的人」。\n\n注意：即使你對某個特定的人有強烈感情，這不是限制性信念，這是正常的。限制性信念是「我不值得被愛」這類對自己的判斷，而不是對某人的感情本身。\n\n找出你的限制性信念，然後重寫它——但不需要先清除所有限制性信念才能顯化。", eg:"「他不可能選我」→ 是真的嗎？→ 重寫：「他永遠選擇我，這是我的現實」"},
+  {term:"肯定語就是自我對話", def:"念肯定語，本質上就是在改變你腦中的自我對話。你平時的內心獨白是什麼？那就是你真正在假設的東西。\n\n大多數人的內心獨白充滿了舊故事：「他不愛我」「我不夠好」「這不可能發生」。狂A就是用新的自我對話，一點一點取代舊的。\n\n每次你念肯定語，不只是在說一句話——你是在改寫你的內心廣播。重複夠多，新的聲音就會成為你腦中的預設頻道。", eg:"舊的內心廣播：「沒人真的愛我」→ 新的：「我永遠被愛」→ 重複到它成為背景音"},
+  {term:"活在終點狀態 Living in the End", def:"不要假設「過程」，要假設「結果已經發生」。你不是在前往終點，你已經在終點了。\n\n活在終點狀態，就是現在就以「那個已經得到的人」的身份生活。你的思考方式、說話方式、對自己的看法，全部都是那個已經得到的人。\n\n這不是假裝，這是選擇居住在哪一個意識現實。你選擇居住在哪裡，哪裡就是你的世界。", eg:"不是「等他回來，我才幸福」→ 是「我現在就是那個幸福的、被愛的人」"},
+  {term:"SAT 睡前睡醒肯定", def:"SAT（State Akin to Sleep）——睡前和剛睡醒的那幾分鐘，是潛意識最開放的時刻，是植入新假設的黃金時間。\n\n睡前：在半夢半醒的狀態中，輕輕重複你的肯定句或新故事，讓它成為你進入睡眠前最後的念頭。\n\n睡醒：在完全清醒之前，腦袋還在α波狀態，立刻開始默念你的肯定語，比任何時候都更容易進入潛意識。\n\n每天早晚各5分鐘的SAT，效果往往比白天1小時的努力更強。", eg:"睡前默念：「他愛我，他選擇我，一切都好」→ 帶著這個念頭入睡 → 醒來第一件事繼續默念"},
+  {term:"潛意識音頻 Subliminal", def:"用錄音在背景播放肯定語，讓潛意識在不知不覺中吸收新的信念。音量很低，意識上聽不清楚，但潛意識會接收。\n\nSubliminal 的好處是你不需要「努力」，只需要播放——做家務、睡覺、工作時都可以。\n\n使用建議：選內容正面的音頻；不需要強迫自己感受到；持續播放比偶爾一次有效；睡覺時播放效果尤其好，因為潛意識在睡眠中仍然活躍。", eg:"睡覺時播放「SP愛我」subliminal → 早上醒來 → 感覺莫名輕盈、對顯化更有信心"},
+  {term:"重塑大腦程式 Reprogramming", def:"你現在的思考模式、情緒反應、信念系統，都是過去幾十年「程式設定」的結果。顯化的本質，就是重新設定這個程式。\n\n重塑大腦程式需要重複和時間。重複的念頭會形成新的神經通道，舊的通道會因為不使用而減弱。\n\n每次你選擇新假設而不是舊反應，你就在建立新的神經通道。每次你做Mental Diet，你就在讓舊通道慢慢萎縮。持續，就是在重塑你的大腦。", eg:"反覆默念新故事 → 大腦開始把它當作「正常」→ 舊的焦慮反應開始減弱 → 新的假設成為預設"},
+  {term:"Revision 改寫", def:"當3D出現了讓你痛苦的事件，不要讓它成為你的現實。Revision 是在腦海中重新播放那個場景，但改變它的結局。\n\n例如：他說了讓你很難受的話。睡前，在腦海中重新播放那個場景，但這次他說的是你想聽的話，你的感覺是被愛的。讓那個改寫後的版本成為你睡前最後的記憶。\n\nRevision 不是逃避現實，是主動選擇讓哪個版本印在你的潛意識裡。你改寫的，才是你在假設的。", eg:"他今天冷淡（3D）→ 睡前revision：他今天溫柔地問我「你今天好嗎？」→ 帶著這個版本入睡"},
+];
+
+const FAQ = [
+  {cat:"❤️ SP", q:"SP已讀不回，我怎麼辦？", a:"3D不重要。已讀不回是過去假設的印出，不是真相。把注意力從已讀不回上移開，繼續你的新假設：「我永遠被他選擇」。3D會跟著改變。"},
+  {cat:"❤️ SP", q:"SP有別人了，還能顯化嗎？", a:"是的。那個「別人」也是你推出去的（EIYPO）。外在的狀況是舊的假設，不是你的未來。當你真正改變了你的假設，3D必須重新排列。繼續你的新故事，不要讓3D的故事成為你的現實。"},
+  {cat:"❤️ SP", q:"面對第三方，我應該怎樣做？", a:"不要盯著3D看，不要去分析他們的關係。你只做一件事：每天在心裡播新劇情。「他已經選擇我了」「他離開她了」。每次腦袋冒出舊畫面，立刻轉頻道，切回你要的畫面。你沒有去搶、沒有去鬧，只是改寫了你的信念。"},
+  {cat:"❤️ SP", q:"他現在完全沒有動靜，我是不是應該放棄？", a:"3D沒有動靜，不等於顯化沒有在發生。橋在建，但你看不到。你的工作不是等他有動靜，是繼續持續你的假設。放棄與否是你的選擇，但如果你還在這裡，那就繼續。停止監測3D，把注意力放回你的4D。"},
+  {cat:"❤️ SP", q:"我越顯化越焦慮，怎麼辦？", a:"焦慮說明你的注意力還在結果上，而不是在假設上。顯化不是一個你要「成功」的任務，是你選擇居住的狀態。試著暫時不想顯化這件事，只是每天做你的狂A，像做日常習慣一樣。把焦點從「有沒有結果」移到「我今天有沒有持續」。"},
+  {cat:"🌸 Self Concept", q:"我根本不相信自己值得，怎麼辦？", a:"你不需要相信。你只需要假設，然後持續。重複告訴自己新故事，重複創造熟悉感，熟悉感讓新假設開始感覺自然。從小的假設開始，一天一天建立新的自我對話。"},
+  {cat:"🌸 Self Concept", q:"Self concept是什麼，重要嗎？", a:"Self concept是你對自己的整體信念——你認為自己是誰、值得什麼。它是顯化的輔助工具，不是前提條件。\n\n你不需要先有完美的self concept 才能顯化SP。兩者是並行的：顯化SP成功，你的self concept 自然增強；self concept 提升了，顯化也會更順暢。不要把self concept 當作「必須先完成的功課」，同步進行就好。"},
+  {cat:"🌸 Self Concept", q:"我要怎麼提升self concept？", a:"每天對自己說新故事。不是「我希望我很好」，是「我天生值得最好的，這是事實」。從一句開始，重複到它感覺自然。\n\n同時注意你平時的自我對話——每次你說「我不行」「我不值得」，立刻轉念，換成新的版本。不需要急，顯化和self concept 會同步成長的。"},
+  {cat:"🎧 狂A", q:"狂A喊了很久，沒有結果？", a:"問自己：你在喊的時候，內心在說什麼？如果你在喊「我被愛」但內心在說「但他不愛我」，那舊假設還在主導。狂A的目的是改變內心對話，不是累積次數。把語氣換成「說事實」，而不是「希望」。"},
+  {cat:"🎧 狂A", q:"什麼是思想飽和？這是最無腦但最有效的方法！", a:"選一句肯定語，然後在腦中不斷重複，像背景音一樣。不用冥想，不用複雜練習，只要洗腦自己。重複夠多次後，情緒開始變了——「我沒感覺，但我相信這在發酵中。」你會發現阻力慢慢消失，新的假設開始感覺自然。這就是思想飽和的力量。"},
+  {cat:"🎧 狂A", q:"我念狂A念到麻木了，正常嗎？", a:"完全正常，麻木有時候反而是好事——說明你的情緒阻力在減少，你開始能平靜地重複而不是帶著渴望。麻木不等於沒效果，只要你繼續重複，它仍然在進入你的潛意識。如果太麻木，可以嘗試換一個環境、換一個時段，或試試睡前SAT。"},
+  {cat:"🎧 狂A", q:"要怎麼選適合自己的狂A句？", a:"選一句讓你感覺最直接、最能代表你想要的結果的句子。不需要太複雜，越簡單越好。重要的是：這句話要是「事實陳述」，不是「希望」。「我永遠被選擇」比「我希望被選擇」有力量得多。選了就堅持用，不要一直換。"},
+  {cat:"🔥 3D", q:"3D不斷出現壞消息，我快撐不住了。", a:"3D有時候會先惡化，因為舊假設還在印出。這是正常的顯化過程，不代表你失敗了。深呼吸，回到4D。你的工作不是改變3D，是繼續持續你的假設。3D是舊的，你的新假設才是方向。"},
+  {cat:"🔥 3D", q:"朋友說這是執念，我這樣會不會很難成功？", a:"顯化和執念的區別在於：執念是緊抓著結果不放，每天在恐懼中等待；顯化是假設結果已發生，然後平靜地持續。如果你發現自己一直在「等」，一直在「查3D」，那是執念的模式。試著把重心放在你的假設和日常，而不是SP的動靜。"},
+  {cat:"🔥 3D", q:"會不會顯化到一半反而更痛苦？", a:"有時候是的——因為你的意識在改變，但3D還沒跟上，這個落差會讓你感覺更明顯。這是過渡期，不是失敗的信號。給自己一個選擇：繼續持續，讓3D追上來；或者暫時把顯化這件事放下，專心照顧自己。兩個都可以，但不要在痛苦中硬撐。"},
+  {cat:"🔥 3D", q:"我很難做到不看3D，怎麼辦？", a:"不是要你完全不看，而是看了之後不讓它改變你的假設。承認你看到的：「好，我知道了。」然後繼續你的新故事。練習把3D當作「舊新聞」——它是已經過期的報紙，不代表今天的現實。"},
+  {cat:"💰 Money", q:"我很缺錢，要怎麼假設豐盛？", a:"不要假設「我想要錢」——假設「我是一個金錢總是流向我的人」。從身份假設，不是從結果假設。停止數算缺口，停止計算不夠。把注意力放在豐盛的假設上，讓現實去安排細節。"},
+  {cat:"📖 基礎", q:"我需要感受到才算成功嗎？", a:"不需要。感受是結果，不是原因。你只需要在腦海中接受新假設為事實，然後持續。感受會跟著來，但你不需要等感受對了才開始。假設是主動的選擇，不是被動等待的感受。"},
+  {cat:"📖 基礎", q:"需要 Let Go 嗎？", a:"不需要。你的工作不是放開，是持續居住在新假設中。如果你一直在想「怎麼 Let Go」，說明你還在關注3D。回到你的假設，繼續你的新故事。持續，才是唯一的答案。"},
+  {cat:"📖 基礎", q:"顯化是不是很玄？有科學根據嗎？", a:"神經科學告訴我們：你重複的念頭會形成新的神經通道，決定你的預設思維和行為模式。你的思維改變了，你注意到的機會、你的行動方式、你散發的狀態都會改變。顯化不一定玄，它的本質是：改變你的內心假設，你的世界就會跟著改變。"},
+  {cat:"📖 基礎", q:"我做了幾天就放棄了，是不是注定失敗？", a:"不是。每次重新開始都算數。顯化沒有「失效」這回事，只有「停止」和「繼續」。今天重新開始，就是今天開始積累。不要因為中斷而自責，自責本身就是一種舊假設。重新拿起你的狂A句，繼續就好。"},
+  {cat:"📖 基礎", q:"我同時顯化幾件事，可以嗎？", a:"可以，但建議初學者先專注一個，等有了感覺再擴展。同時顯化多件事的關鍵是：每件事都有清晰的假設，而不是模糊地「希望一切都好」。你可以有不同的狂A句對應不同的顯化，但確保你真的有時間和精力持續每一個。"},
+];
+
+const STORIES = [
+  {
+    cat:"❤️ SP · 第三方",
+    aff:"「他跟她分開了。」",
+    method:"Robotic Affirming + Mental Diet",
+    story:"SP跟別人在一起，看起來堅不可摧。我沒有去想「他會不會愛我」，也沒去想「他什麼時候來找我」。我的任務只有一個：在我的腦中，讓「他跟她分開」成為一個不可撼動的事實。\n\n我像個跳針的錄音帶，24/7在腦中播放這句話。任何懷疑的念頭一冒出來，就立刻用Mental Diet掐死，然後繼續面無表情地重複：「他跟她分開了。」",
+    result:"那個看似堅不可摧的關係，就這樣結束了。他走向了我，因為在我的世界裡，這條路早就被清空了。",
+    key:"不需要相信，不需要感受。只需要讓那句話在腦中成為不可撼動的事實。"
+  },
+  {
+    cat:"🏡 租房顯化",
+    aff:"「房子就是我們的。」",
+    method:"快速轉念 + 堅定肯定語",
+    story:"在國外租房超麻煩，留電話都沒人理。直接衝去門市問，馬上約到看房。到了那天還有兩組人一起看，我一度緊張……但我立刻轉念：「沒人能搶走我的！」結果其他人看一眼就走了，只剩我們。\n\n男友填資料送出，但隔天早上都沒消息。我就邊上班邊在心裡肯定：「房子就是我們的。」就只肯定了沒幾次——",
+    result:"半小時後房東回覆：接受我們的 offer！才一天的時間就租到房子。",
+    key:"「快速轉念」＋「堅定肯定語」是最穩定的 combo。意念比你想像的還有力量。"
+  },
+  {
+    cat:"❤️ SP · 主動回來",
+    aff:"「他離開她了。」",
+    method:"信念一致 + 不看3D + 內在畫面",
+    story:"他冷淡時，我心裡默「刪除！」，立刻切回肯定語。我每天默念「他離開她」，不加任何糾結。有些時候我想像他在我身邊的日常，笑容都活靈活現。\n\n我沒有去盯著3D看，沒有去分析他們的關係，把所有能量都投資在我要的版本上。",
+    result:"過了兩週，他傳訊：「我要離開她。」",
+    key:"給自己一個乾淨、毫無雜訊的信號。別再跟3D打架，它會回來找你的，真的會。"
+  },
+  {
+    cat:"❤️ SP · 面對第三方",
+    aff:"「他已經選擇我了。」",
+    method:"Mental Diet + 轉頻道練習",
+    story:"那時候他身邊一直都有別人，我超級痛，每次看到現實都覺得：「我是不是自作多情？」但後來我發現，那些讓我崩潰的場面，其實只是我舊的想法在播映。\n\n於是我開始練習——不再盯著3D現實看，只做一件事：每天在心裡播新劇情。「他已經選擇我了」「他離開她了」。每次腦袋冒出舊畫面，立刻像轉頻道一樣轉回我要的畫面。",
+    result:"最後——他真的選擇了我，結束了第三方的關係。我沒有去搶、沒有去鬧，只是改寫了我的信念。",
+    key:"不是一夜就變好，但一步一步穩下來。把能量都投資在你要的版本上。"
+  },
+];
+
+const PRACTICES = [
+  { id:"p1", cat:"❤️ SP", title:"SP 新故事練習", desc:"把你和SP的舊故事完全重寫，用現在式說出你想要的現實。",
+    steps:[
+      {label:"舊故事", hint:"我以前對這段關係的故事是……", ph:"例：他不愛我，他總是忽略我……"},
+      {label:"新故事（現在式）", hint:"現在的真相是……像在說顯而易見的事實", ph:"例：SP永遠選擇我，我們的關係完美和諧……"},
+      {label:"今天的狂A句", hint:"從新故事中提取一句，作為今天的狂A", ph:"例：我永遠被選擇，被愛，被珍惜"},
+    ]},
+  { id:"p2", cat:"❤️ SP", title:"EIYPO 反思練習", desc:"SP的行為是你內心假設的投射。找出背後的假設，然後改變它。",
+    steps:[
+      {label:"SP最近的行為（3D）", hint:"他/她做了什麼讓你不安？", ph:"例：他已讀不回，他冷淡了……"},
+      {label:"這個行為反映了我什麼假設？", hint:"我對自己的什麼信念造成了這個3D？", ph:"例：我假設自己不夠重要，不值得被回應……"},
+      {label:"我要改成什麼新假設？", hint:"把上面的假設完全翻轉，用確定語氣", ph:"例：我永遠是他的第一優先，他永遠想回應我……"},
+    ]},
+  { id:"p3", cat:"🌸 Self Concept", title:"新身份宣言", desc:"從四個層面重建你對自己的信念，寫出屬於你的身份宣言。",
+    steps:[
+      {label:"愛情身份", hint:"在愛情中，我是一個什麼樣的人？", ph:"例：我是一個永遠被愛、永遠被選擇的人……"},
+      {label:"金錢身份", hint:"在金錢上，我是一個什麼樣的人？", ph:"例：我是一個金錢總是流向我的豐盛的人……"},
+      {label:"工作身份", hint:"在工作上，我是一個什麼樣的人？", ph:"例：我是任何機構都夢寐以求的人才……"},
+      {label:"整體身份宣言", hint:"把以上整合成一段完整的宣言，每天大聲讀", ph:"例：我，[你的名字]，天生值得最好的一切……"},
+    ]},
+  { id:"p4", cat:"🌸 Self Concept", title:"舊故事翻轉練習", desc:"找出你最常講的舊故事，把它徹底翻轉成新的假設。",
+    steps:[
+      {label:"我最常對自己說的舊故事", hint:"誠實寫下你重複了很多次的負面故事", ph:"例：我就是不夠好，沒有人真的愛我……"},
+      {label:"這個舊故事帶來了什麼？", hint:"這個故事在你生活中印出了什麼？", ph:"例：帶來了孤獨感、被忽視的經歷……"},
+      {label:"翻轉後的新故事", hint:"用完全相反的確定語氣重寫，像說廢話一樣自然", ph:"例：我天生值得被愛，愛對我來說是輕鬆自然的……"},
+      {label:"提取一句每日狂A", hint:"從新故事中選一句今天開始用", ph:"例：我天生值得最好的一切"},
+    ]},
+  { id:"p5", cat:"🎧 狂A", title:"思想飽和練習", desc:"選一句，讓它成為你腦中的背景音。笨，但有效。",
+    steps:[
+      {label:"選定你的句子", hint:"選一句最直接、最能代表你想要結果的句子", ph:"例：他跟她分開了 / 我永遠被選擇 / 房子就是我的"},
+      {label:"為什麼選這句？", hint:"這句話如果是事實，你的生活會是什麼樣子？", ph:"例：如果他跟她分開了，我們就可以在一起了……"},
+      {label:"今天的飽和計畫", hint:"你打算怎麼讓這句話成為今天的背景音？", ph:"例：上班通勤時默念，睡前播放器播10分鐘，任何懷疑念頭冒出就立刻切回……"},
+    ]},
+  { id:"p6", cat:"🎧 狂A", title:"語氣升級練習", desc:"把「希望語氣」的句子升級成「事實語氣」，這才是真正的假設。",
+    steps:[
+      {label:"你現在用的句子（希望語氣）", hint:"寫下你常用但感覺像在許願的句子", ph:"例：我希望SP愛我 / 我想要有錢 / 希望找到好工作……"},
+      {label:"升級成事實語氣", hint:"去掉「希望」「想要」，改成「我是」「我有」「這就是我的現實」", ph:"例：SP愛我 / 金錢總是流向我 / 我是夢寐以求的人才……"},
+      {label:"選一句今天使用", hint:"從升級後的句子中選最有力量的一句", ph:""},
+    ]},
+  { id:"p7", cat:"🔥 3D急救", title:"3D急救練習", desc:"當3D讓你很難繼續時，用這個練習把注意力拉回到你的假設。",
+    steps:[
+      {label:"現在的3D狀況", hint:"簡單描述讓你不安的3D，承認它", ph:"例：他今天沒有主動聯絡……"},
+      {label:"提醒自己：這是舊的", hint:"為什麼這個3D不代表你的未來？", ph:"例：這是過去假設的印出，不是現在的真相……"},
+      {label:"回到你的假設", hint:"寫下你的新假設，用現在式，確定語氣", ph:"例：我永遠被選擇，這是事實，3D必須跟著改變……"},
+      {label:"現在的行動", hint:"你接下來要做什麼來持續這個假設？", ph:"例：打開播放器，播10分鐘狂A，然後繼續我的一天……"},
+    ]},
+  { id:"p8", cat:"🔥 3D急救", title:"Mental Diet 轉頻道練習", desc:"每次舊畫面冒出來，立刻轉頻道。這個練習幫你練習這個動作。",
+    steps:[
+      {label:"你的舊畫面是什麼？", hint:"那個不斷在腦中播映、讓你不安的畫面", ph:"例：他和她在一起的畫面 / 他冷淡地看著我……"},
+      {label:"你的新頻道是什麼？", hint:"你想要取代它的畫面或感覺", ph:"例：他主動傳訊給我 / 我們笑著在一起 / 他選擇了我……"},
+      {label:"練習：現在切換一次", hint:"把舊畫面刪除，把新畫面在腦中清晰地播放30秒", ph:"把你的新頻道寫下來，讓它更清晰……"},
+    ]},
+  { id:"p9", cat:"✨ 晨間儀式", title:"早晨顯化儀式設計", desc:"設計一個屬於你的早晨儀式，15分鐘內完成，每天開啟新假設。",
+    steps:[
+      {label:"Step 1：新故事複習（3分鐘）", hint:"寫下你今天要複習的新故事", ph:"例：我永遠被愛，金錢輕鬆流向我，我的生活越來越好……"},
+      {label:"Step 2：身份確認（2分鐘）", hint:"用一句話確認你今天是誰", ph:"例：我是一個天生值得最好的一切的人……"},
+      {label:"Step 3：今天的狂A句（10分鐘）", hint:"選定今天的狂A句，打開播放器練習", ph:"例：我永遠被選擇，被愛，被珍惜"},
+      {label:"今天的意圖", hint:"今天你打算如何持續你的假設？", ph:"例：今天無論3D發生什麼，我都繼續居住在我的新假設中……"},
+    ]},
+  { id:"p10", cat:"✨ 晨間儀式", title:"初學者入門練習", desc:"如果你剛開始，這是最簡單的第一步。做完這個練習，你就已經開始了。",
+    steps:[
+      {label:"我想要顯化什麼？", hint:"用一句話說出你最想要的結果", ph:"例：我想要SP回來 / 我想要有更多錢……"},
+      {label:"假設它已經發生，現在的我是誰？", hint:"如果這已經是事實，我是一個什麼樣的人？", ph:"例：我是一個被愛的人 / 我是一個豐盛的人……"},
+      {label:"我今天的第一句狂A", hint:"從上面的身份提取一句，這就是你今天的狂A", ph:"例：我是一個永遠被愛的人"},
+      {label:"今天的承諾", hint:"今天你承諾繼續持續，不管3D怎樣", ph:"例：今天無論發生什麼，我都繼續告訴自己新故事……"},
+    ]},
+];
+
+const MILESTONES = [
+  {count:100,     emoji:"🌱", label:"初心者",   desc:"展開旅程，播下第一顆種子"},
+  {count:1000,    emoji:"✨", label:"練習者",   desc:"開始感受新的自然感"},
+  {count:10000,   emoji:"🌸", label:"信念者",   desc:"新故事成為本能反應"},
+  {count:100000,  emoji:"💫", label:"顯化師",   desc:"現實開始大幅重新排列"},
+  {count:500000,  emoji:"🏆", label:"持續大師", desc:"Persist成為你的生活方式"},
+  {count:1000000, emoji:"👑", label:"百萬傳說", desc:"你就是那個假設本身"},
+];
+
+const PAGES = ["home","library","diary","challenge","wiki","faq","stories","practices","club"];
+const PAGE_ICONS  = {home:"🌸",library:"🎧",diary:"🔥",challenge:"🏆",wiki:"📚",faq:"❓",stories:"🌟",practices:"📖",club:"🏅"};
+const PAGE_LABELS = {home:"首頁",library:"狂A播放器庫",diary:"狂A日記",challenge:"每月挑戰",wiki:"顯化百科",faq:"FAQ",stories:"成功案例牆",practices:"顯化練習庫",club:"百萬狂A俱樂部"};
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUTH  (localStorage-based, no backend)
+// ════════════════════════════════════════════════════════════════════════════
+let currentUser = null;
+
+function getUsers()  { return JSON.parse(localStorage.getItem('ml_users') || '{}'); }
+function saveUsers(u){ localStorage.setItem('ml_users', JSON.stringify(u)); }
+function getUserData(email){ return JSON.parse(localStorage.getItem('ml_data_' + email) || 'null'); }
+function saveUserData(email, data){ localStorage.setItem('ml_data_' + email, JSON.stringify(data)); }
+
+function defaultData() {
+  return { count:0, diary:[], favs:{}, story:"", joined: new Date().toLocaleDateString("zh-TW"), challengeStart: Date.now() };
+}
+
+function switchTab(tab) {
+  document.getElementById('auth-login').style.display    = tab==='login'    ? '' : 'none';
+  document.getElementById('auth-register').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('active',    tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('login-pw').value;
+  const err   = document.getElementById('login-err');
+  const users = getUsers();
+  if (!users[email]) { err.textContent = '找不到此帳號，請先註冊'; return; }
+  if (users[email].pw !== btoa(pw)) { err.textContent = '密碼錯誤'; return; }
+  err.textContent = '';
+  loginSuccess(email, users[email].name);
+}
+
+function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('reg-pw').value;
+  const pw2   = document.getElementById('reg-pw2').value;
+  const err   = document.getElementById('reg-err');
+  if (!name)           { err.textContent = '請輸入暱稱'; return; }
+  if (!email.includes('@')) { err.textContent = '請輸入有效電郵'; return; }
+  if (pw.length < 6)   { err.textContent = '密碼至少6位'; return; }
+  if (pw !== pw2)      { err.textContent = '兩次密碼不一致'; return; }
+  const users = getUsers();
+  if (users[email])    { err.textContent = '此電郵已被使用'; return; }
+  users[email] = { name, pw: btoa(pw) };
+  saveUsers(users);
+  saveUserData(email, defaultData());
+  err.textContent = '';
+  loginSuccess(email, name);
+}
+
+function loginSuccess(email, name) {
+  currentUser = { email, name };
+  localStorage.setItem('ml_session', JSON.stringify(currentUser));
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('sidebar-username').textContent = '👤 ' + name;
+  loadUserData();
+  initApp();
+}
+
+function doLogout() {
+  localStorage.removeItem('ml_session');
+  currentUser = null;
+  closeSettings();
+  location.reload();
+}
+
+function loadUserData() {
+  if (!currentUser) return;
+  const d = getUserData(currentUser.email) || defaultData();
+  myCount      = d.count  || 0;
+  diaryEntries = d.diary  || [];
+  favs         = d.favs   || {};
+  const story  = d.story  || "";
+  document.getElementById('home-story').value = story;
+}
+
+function persist() {
+  if (!currentUser) return;
+  const d = getUserData(currentUser.email) || defaultData();
+  d.count = myCount; d.diary = diaryEntries; d.favs = favs;
+  d.story = document.getElementById('home-story').value;
+  saveUserData(currentUser.email, d);
+}
+
+function saveStory() { persist(); }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════════════════════
+function openSettings() {
+  if (!currentUser) return;
+  const d = getUserData(currentUser.email) || defaultData();
+  document.getElementById('settings-email').textContent  = currentUser.email;
+  document.getElementById('settings-name').textContent   = currentUser.name;
+  document.getElementById('settings-joined').textContent = d.joined || '—';
+  document.getElementById('settings-count').textContent  = (d.count||0).toLocaleString() + ' 次';
+  document.getElementById('settings-diary').textContent  = (d.diary||[]).length + ' 筆';
+  document.getElementById('settings-overlay').classList.add('show');
+}
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('show'); }
+function resetData() {
+  if (!confirm('確定要重置所有數據嗎？此操作不可還原。')) return;
+  saveUserData(currentUser.email, defaultData());
+  myCount = 0; diaryEntries = []; favs = {};
+  document.getElementById('home-story').value = '';
+  document.getElementById('count-display').textContent = '0';
+  renderDiary(); renderMilestones();
+  closeSettings();
+  alert('數據已重置 🌱');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+let currentPage = "home";
+let libFilter   = "全部";
+let faqFilter   = "全部";
+let favs        = {};
+let diaryMood   = "🌸";
+let diaryEntries = [];
+let myCount     = 0; // legacy; actual count derived from diary
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════════════════════════════════════════
+let audioDuration = 3;
+let audioPlaying  = false;
+let audioActiveId = null;
+let audioStart    = null;
+let audioCount    = 0;
+let audioTimer    = null;
+let audioText     = "";
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-TW"; u.rate = 0.85; u.pitch = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const zh = voices.find(v => v.lang === 'zh-TW') || voices.find(v => v.lang.startsWith('zh'));
+  if (zh) u.voice = zh;
+  u.onend = () => {
+    if (!audioStart) return;
+    audioCount++;
+    if ((Date.now() - audioStart) / 1000 < audioDuration * 60)
+      setTimeout(() => { if (audioStart) speak(audioText); }, 700);
+    else stopAudio();
+  };
+  speechSynthesis.speak(u);
+}
+function startAudio(id, text) {
+  stopAudio();
+  audioText = text; audioActiveId = id; audioPlaying = true; audioCount = 0;
+  audioStart = Date.now();
+  speak(text);
+  audioTimer = setInterval(updateAudioBar, 500);
+  updateAudioBar(); renderLibrary();
+}
+function stopAudio() {
+  speechSynthesis?.cancel(); clearInterval(audioTimer);
+  audioStart = null; audioPlaying = false; audioActiveId = null;
+  document.getElementById("audio-bar").classList.remove("show");
+  renderLibrary();
+}
+function updateAudioBar() {
+  if (!audioStart) return;
+  const e = Math.floor((Date.now() - audioStart) / 1000);
+  const tot = audioDuration * 60;
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  document.getElementById("audio-bar").classList.add("show");
+  document.getElementById("audio-info").textContent  = `▶ 播放中 · ${audioDuration} 分鐘 · 已重複 ${audioCount} 次`;
+  document.getElementById("audio-timer").textContent = `${fmt(e)} / ${fmt(tot)}`;
+  document.getElementById("audio-prog").style.width  = Math.min(e/tot*100,100) + "%";
+  if (e >= tot) stopAudio();
+}
+function toggleCustom() {
+  const text = document.getElementById("custom-aff").value.trim();
+  if (!text) return;
+  if (audioActiveId==="custom" && audioPlaying) stopAudio();
+  else startAudio("custom", text);
+}
+document.querySelectorAll(".dur-btn").forEach(b => {
+  b.addEventListener("click", () => {
+    audioDuration = parseInt(b.dataset.dur);
+    if (audioPlaying) stopAudio();
+    document.querySelectorAll(".dur-btn").forEach(x => x.classList.toggle("active-dur", x===b));
+    renderLibrary();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════════════════════════
+function goTo(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item[data-page]").forEach(n => n.classList.remove("active"));
+  const el = document.getElementById("page-" + page);
+  if (el) el.classList.add("active");
+  const nav = document.querySelector(`[data-page="${page}"]`);
+  if (nav) nav.classList.add("active");
+  currentPage = page;
+}
+document.querySelectorAll(".nav-item[data-page]").forEach(n => {
+  n.addEventListener("click", () => goTo(n.dataset.page));
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════════════════════
+function renderHome() {
+  document.getElementById("daily-reminder").textContent = `"${DAILY[new Date().getDay() % DAILY.length]}"`;
+  document.getElementById("quick-nav").innerHTML = PAGES.slice(1).map(p =>
+    `<div class="nav-card" onclick="goTo('${p}')">
+       <span style="font-size:18px;">${PAGE_ICONS[p]}</span>
+       <span>${PAGE_LABELS[p]}</span>
+     </div>`).join("");
+  // challenge day counter
+  const d = currentUser ? (getUserData(currentUser.email)||defaultData()) : defaultData();
+  const dayNum = Math.min(Math.floor((Date.now()-(d.challengeStart||Date.now()))/(1000*60*60*24))+1, 21);
+  const pct = Math.round(dayNum/21*100);
+  const el = document.getElementById("challenge-day");
+  const pr = document.getElementById("challenge-prog");
+  const lf = document.getElementById("challenge-left");
+  if(el) el.textContent = `Day ${dayNum} / 21`;
+  if(pr) pr.style.width = pct + "%";
+  if(lf) lf.textContent = dayNum >= 21 ? "🎉 挑戰完成！" : `還剩 ${21-dayNum} 天 · 繼續持續`;
+}
+
+function renderLibrary() {
+  const CATS = ["全部","❤️ SP","🌸 Self Concept","💰 Money","🏡 Dream Life","💼 Career","🌿 General"];
+  document.getElementById("lib-filters").innerHTML = CATS.map(c =>
+    `<button class="${libFilter===c?'btn':'btn-ghost'}" onclick="setLibFilter('${c}')">${c}</button>`
+  ).join("");
+  const shown = libFilter==="全部" ? AFFIRMATIONS : AFFIRMATIONS.filter(a => a.cat===libFilter);
+  document.getElementById("aff-cards").innerHTML = shown.map(a => {
+    const active = audioActiveId===a.id && audioPlaying;
+    return `<div class="aff-card${active?' playing':''}">
+      <div class="aff-card-top">
+        <span class="tag">${a.cat}</span>
+        <button class="fav-btn" onclick="toggleFav(${a.id})">${favs[a.id]?"❤️":"🤍"}</button>
+      </div>
+      <div class="aff-text">${a.text}</div>
+      <button class="btn play-btn" onclick="togglePlay(${a.id},'${a.text.replace(/'/g,"\\'")}')">
+        ${active ? "⏹ 停止播放" : `▶ 播放 ${audioDuration} 分鐘`}
+      </button>
+    </div>`;
+  }).join("");
+}
+function setLibFilter(cat) { libFilter=cat; renderLibrary(); }
+function toggleFav(id) { favs[id]=!favs[id]; persist(); renderLibrary(); }
+function togglePlay(id, text) {
+  if (audioActiveId===id && audioPlaying) stopAudio();
+  else startAudio(id, text);
+}
+
+// ── Daily Plan Checkboxes ────────────────────────────────────────────────────
+const planState = { morning: false, noon: false, night: false };
+
+function togglePlan(slot) {
+  planState[slot] = !planState[slot];
+  const el = document.getElementById('plan-' + slot);
+  if (el) el.textContent = planState[slot] ? '✅' : '⬜';
+  const allDone = planState.morning && planState.noon && planState.night;
+  const msg = document.getElementById('plan-done-msg');
+  if (msg) msg.style.display = allDone ? 'block' : 'none';
+}
+
+// ── Diary Calculator ─────────────────────────────────────────────────────────
+function setSpeed(n) {
+  document.getElementById('calc-speed').value = n;
+  calcCount();
+}
+
+function calcCount() {
+  const speed = parseInt(document.getElementById('calc-speed').value) || 0;
+  const mins  = parseInt(document.getElementById('calc-mins').value)  || 0;
+  const result = document.getElementById('calc-result');
+  if (speed > 0 && mins > 0) {
+    const total = speed * mins;
+    result.style.display = 'block';
+    document.getElementById('calc-count-display').textContent = total.toLocaleString();
+    document.getElementById('calc-breakdown').textContent = `${speed} 次/分鐘 × ${mins} 分鐘 = ${total.toLocaleString()} 次`;
+  } else {
+    result.style.display = 'none';
+  }
+}
+
+function useCalcCount() {
+  const speed = parseInt(document.getElementById('calc-speed').value) || 0;
+  const mins  = parseInt(document.getElementById('calc-mins').value)  || 0;
+  if (speed > 0 && mins > 0) {
+    const total = speed * mins;
+    document.getElementById('d-count').value = total;
+    document.getElementById('d-mins').value  = mins;
+    // scroll to entry card smoothly
+    document.getElementById('d-aff').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('d-aff').focus();
+  }
+}
+
+function renderDiary() {
+  // total count banner
+  const totalCount = diaryEntries.reduce((sum, e) => sum + (parseInt(e.count)||0), 0);
+  const banner = document.getElementById('diary-total-banner');
+  if (banner) {
+    banner.style.display = diaryEntries.length > 0 ? 'flex' : 'none';
+    const tc = document.getElementById('diary-total-count');
+    if (tc) tc.textContent = totalCount.toLocaleString() + ' 次';
+  }
+
+  document.getElementById("diary-list").innerHTML = diaryEntries.length === 0
+    ? `<div style="text-align:center;color:var(--muted);padding:40px;font-style:italic;">還沒有記錄 · 今天開始你的第一筆 🌸</div>`
+    : diaryEntries.map(e => `
+    <div class="card diary-entry">
+      <span style="font-size:22px;">${e.mood}</span>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;">${e.aff}</div>
+        ${e.note ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">${e.note}</div>` : ""}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;color:var(--accent);font-weight:600;">${e.count}次 · ${e.mins}分</div>
+        <div style="font-size:11px;color:var(--muted);">${e.date}</div>
+      </div>
+    </div>`).join("");
+}
+function addDiary() {
+  const aff = document.getElementById("d-aff").value.trim();
+  if (!aff) return;
+  const entry = {
+    date: new Date().toLocaleDateString("zh-TW"), aff, mood: diaryMood,
+    count: document.getElementById("d-count").value || 0,
+    mins:  document.getElementById("d-mins").value  || 0,
+    note:  document.getElementById("d-note").value  || "",
+  };
+  diaryEntries.unshift(entry);
+  persist();
+  document.getElementById("d-aff").value = "";
+  document.getElementById("d-count").value = "";
+  document.getElementById("d-mins").value  = "";
+  document.getElementById("d-note").value  = "";
+  renderDiary();
+  updateClub();
+}
+document.getElementById("mood-btns").addEventListener("click", e => {
+  if (!e.target.classList.contains("mood-btn")) return;
+  diaryMood = e.target.dataset.mood;
+  document.querySelectorAll(".mood-btn").forEach(b => b.style.opacity = b.dataset.mood===diaryMood ? "1" : "0.3");
+});
+
+function renderWiki() {
+  document.getElementById("wiki-cards").innerHTML = WIKI.map((w,i) => `
+    <div class="card wiki-card" id="wiki-${i}" onclick="toggleWiki(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:15px;font-weight:700;">${w.term}</div>
+        <span style="color:var(--muted);font-size:13px;" id="wiki-arrow-${i}">▼</span>
+      </div>
+      <div id="wiki-body-${i}" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:13px;color:var(--soft);line-height:1.9;white-space:pre-line;margin-bottom:12px;">${w.def}</div>
+        <div style="background:#FAF0F4;border-radius:10px;padding:10px 14px;font-size:12px;color:var(--soft);font-style:italic;">💡 例：${w.eg}</div>
+      </div>
+    </div>`).join("");
+}
+function toggleWiki(i) {
+  const body  = document.getElementById("wiki-body-"  + i);
+  const arrow = document.getElementById("wiki-arrow-" + i);
+  const card  = document.getElementById("wiki-" + i);
+  const open  = body.style.display === "block";
+  body.style.display = open ? "none" : "block";
+  arrow.textContent  = open ? "▼" : "▲";
+  card.classList.toggle("open", !open);
+}
+
+function renderFAQ() {
+  const CATS = ["全部","❤️ SP","🌸 Self Concept","🎧 狂A","🔥 3D","💰 Money","📖 基礎"];
+  document.getElementById("faq-filters").innerHTML = CATS.map(c =>
+    `<button class="${faqFilter===c?'btn':'btn-ghost'}" style="padding:6px 12px;font-size:11px;" onclick="setFaqFilter('${c}')">${c}</button>`
+  ).join("");
+  const shown = faqFilter==="全部" ? FAQ : FAQ.filter(f => f.cat===faqFilter);
+  document.getElementById("faq-list").innerHTML = shown.map((f,i) => `
+    <div class="card faq-item" onclick="toggleFaq(${i})">
+      <div class="faq-q">
+        <div style="flex:1;">
+          <span class="tag" style="margin-bottom:8px;display:inline-block;">${f.cat}</span>
+          <div style="font-size:14px;font-weight:600;line-height:1.5;">${f.q}</div>
+        </div>
+        <span style="color:var(--muted);flex-shrink:0;margin-left:12px;align-self:flex-start;padding-top:2px;" id="faq-arrow-${i}">▼</span>
+      </div>
+      <div class="faq-a" id="faq-a-${i}">${f.a}</div>
+    </div>`).join("");
+}
+function setFaqFilter(cat) { faqFilter=cat; renderFAQ(); }
+function toggleFaq(i) {
+  const a     = document.getElementById("faq-a-"     + i);
+  const arrow = document.getElementById("faq-arrow-" + i);
+  const open  = a.style.display === "block";
+  a.style.display = open ? "none" : "block";
+  arrow.textContent = open ? "▼" : "▲";
+}
+
+function renderStories() {
+  document.getElementById("story-cards").innerHTML = STORIES.map(s => `
+    <div class="story-card">
+      <span class="tag tag-pink">${s.cat}</span>
+      <div style="margin-top:14px;">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">${s.aff}</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:0.08em;">方法：${s.method}</div>
+      </div>
+      <div class="story-label">故事</div>
+      <div class="story-body" style="white-space:pre-line;">${s.story}</div>
+      <div class="story-label">結果</div>
+      <div class="story-result">${s.result}</div>
+      <div class="story-key">💡 ${s.key}</div>
+    </div>`).join("");
+}
+
+// ── Practices ────────────────────────────────────────────────────────────────
+let practiceFilter  = "全部";
+let practiceAnswers = {};
+let openPractice    = null;
+
+function renderPractices() {
+  const CATS = ["全部","❤️ SP","🌸 Self Concept","🎧 狂A","🔥 3D急救","✨ 晨間儀式"];
+  document.getElementById("practice-filters").innerHTML = CATS.map(c =>
+    `<button class="${practiceFilter===c?'btn':'btn-ghost'}" style="padding:6px 12px;font-size:11px;" onclick="setPracticeFilter('${c}')">${c}</button>`
+  ).join("");
+  const shown = practiceFilter==="全部" ? PRACTICES : PRACTICES.filter(p => p.cat===practiceFilter);
+  document.getElementById("practice-list").innerHTML = shown.map(p => {
+    const isOpen  = openPractice === p.id;
+    const answers = practiceAnswers[p.id] || {};
+    const filled  = Object.values(answers).filter(v => v && v.trim()).length;
+    const total   = p.steps.length;
+    const pct     = total ? Math.round(filled/total*100) : 0;
+    return `
+    <div class="card" style="margin-bottom:14px;${isOpen?'border-color:var(--accent);':''}">
+      <div onclick="togglePractice('${p.id}')" style="cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <span class="tag" style="margin-bottom:8px;display:inline-block;">${p.cat}</span>
+            <div style="font-size:16px;font-weight:700;margin-top:6px;">${p.title}</div>
+          </div>
+          <span style="color:var(--muted);font-size:13px;flex-shrink:0;margin-left:12px;">${isOpen?'▲':'▼'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--soft);line-height:1.7;margin-bottom:10px;">${p.desc}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:4px;background:var(--border);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--lavd),var(--accent));border-radius:4px;"></div>
+          </div>
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;">${filled}/${total} 步完成</span>
+        </div>
+      </div>
+      ${isOpen ? `
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;">
+        ${p.steps.map((step, si) => `
+          <div style="margin-bottom:18px;">
+            <div style="font-size:12px;font-weight:700;margin-bottom:3px;">Step ${si+1}：${step.label}</div>
+            <div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:8px;">${step.hint}</div>
+            <textarea rows="3" placeholder="${step.ph}"
+              style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;background:#FDFBFF;"
+              oninput="savePracticeAnswer('${p.id}',${si},this.value)"
+            >${answers[si]||''}</textarea>
+          </div>`).join('')}
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button class="btn" style="flex:1;" onclick="completePractice('${p.id}')">✓ 完成練習</button>
+          <button class="btn-ghost" onclick="clearPractice('${p.id}')">清除</button>
+        </div>
+        <div id="done-${p.id}" style="display:none;text-align:center;padding:14px;background:linear-gradient(135deg,#F5EEF8,#FAF0F4);border-radius:10px;margin-top:12px;font-size:13px;color:var(--accent);font-weight:600;">
+          🌸 練習完成！繼續持續你的新假設。
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join("");
+}
+function setPracticeFilter(cat) { practiceFilter=cat; renderPractices(); }
+function togglePractice(id) { openPractice = openPractice===id ? null : id; renderPractices(); }
+function savePracticeAnswer(pid, si, val) {
+  if (!practiceAnswers[pid]) practiceAnswers[pid] = {};
+  practiceAnswers[pid][si] = val;
+}
+function completePractice(id) {
+  const el = document.getElementById("done-" + id);
+  if (el) el.style.display = "block";
+}
+function clearPractice(id) { practiceAnswers[id] = {}; renderPractices(); }
+
+function renderMilestones(total) {
+  const myCount = (total !== undefined) ? total : getTotalFromDiary();
+  document.getElementById("milestones").innerHTML = MILESTONES.map(m => {
+    const reached = myCount >= m.count;
+    return `<div class="ms-card${reached?" reached":" dim"}">
+      <div style="font-size:32px;margin-bottom:6px;">${m.emoji}</div>
+      <div style="font-size:18px;font-weight:700;color:${reached?"var(--accent)":"var(--muted)"};">${m.count.toLocaleString()}</div>
+      <div style="font-size:13px;font-weight:600;margin-top:4px;">${m.label}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;">${m.desc}</div>
+      ${reached ? '<div class="tag tag-pink" style="margin-top:10px;">已達成 🎉</div>' : ""}
+    </div>`;
+  }).join("");
+}
+function getTotalFromDiary() {
+  return diaryEntries.reduce((sum, e) => sum + (parseInt(e.count) || 0), 0);
+}
+
+function updateClub() {
+  const total = getTotalFromDiary();
+  const display = document.getElementById("count-display");
+  const sub     = document.getElementById("club-diary-count");
+  if (display) display.textContent = total.toLocaleString();
+  if (sub) sub.textContent = diaryEntries.length + " 筆日記記錄";
+  renderMilestones(total);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+function initApp() {
+  renderHome(); renderLibrary(); renderDiary(); renderWiki();
+  renderFAQ(); renderStories(); renderPractices(); renderMilestones();
+  updateClub();
+}
+
+// Check existing session
+const session = JSON.parse(localStorage.getItem('ml_session') || 'null');
+if (session && session.email) {
+  const users = getUsers();
+  if (users[session.email]) {
+    currentUser = session;
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('sidebar-username').textContent = '👤 ' + session.name;
+    loadUserData();
+    initApp();
+  }
+}
+
+// Settings overlay close on bg click
+document.getElementById('settings-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+});
+
+speechSynthesis.onvoiceschanged = () => {};
+</script>
+</body>
+</html>
