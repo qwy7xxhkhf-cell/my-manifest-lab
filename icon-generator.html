@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/><title>Icon Generator</title></head>
+<body style="font-family:Georgia,serif;background:#FAF7F2;padding:40px;text-align:center;">
+<h2 style="color:#2C2640;">🌸 Manifest Lab — Icon Generator</h2>
+<p style="color:#7A6E8A;margin-bottom:30px;">右鍵每個圖示 → 另存圖片 → 放入 icons/ 資料夾</p>
+
+<div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap;">
+
+<!-- 192x192 -->
+<div>
+  <canvas id="c192" width="192" height="192"></canvas>
+  <br/><button onclick="download('c192','icon-192.png')" style="margin-top:10px;background:#D4788A;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:13px;">下載 icon-192.png</button>
+</div>
+
+<!-- 512x512 -->
+<div>
+  <canvas id="c512" width="512" height="512"></canvas>
+  <br/><button onclick="download('c512','icon-512.png')" style="margin-top:10px;background:#D4788A;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:13px;">下載 icon-512.png</button>
+</div>
+
+</div>
+
+<script>
+function drawIcon(canvasId, size) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const r = size * 0.24;
+
+  // ── Background ───────────────────────────────────────────────────────────
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#FAF7F2');
+  grad.addColorStop(1, '#F5EEF5');
+
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+
+  // ── Soft blush glow (centred) ─────────────────────────────────────────────
+  const cx = size / 2, cy = size / 2;
+  const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.38);
+  cg.addColorStop(0, 'rgba(242,212,215,0.5)');
+  cg.addColorStop(1, 'rgba(242,212,215,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.38, 0, Math.PI * 2);
+  ctx.fillStyle = cg;
+  ctx.fill();
+
+  ctx.restore();
+
+  // ── Monogram "M" centred ─────────────────────────────────────────────────
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `300 ${size * 0.56}px Georgia, "Times New Roman", serif`;
+  ctx.fillStyle = '#C9748A';
+  ctx.globalAlpha = 0.88;
+  ctx.fillText('M', size / 2, size / 2);
+  ctx.globalAlpha = 1;
+}
+
+function download(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+drawIcon('c192', 192);
+drawIcon('c512', 512);
+</script>
+</body>
+</html>

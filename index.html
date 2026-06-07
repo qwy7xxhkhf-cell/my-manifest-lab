@@ -2,8 +2,15 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>🌸 Manifest Lab</title>
+<meta name="description" content="停止找方法，開始持續。Law of Assumption 顯化工具箱" />
+<meta name="theme-color" content="#D4788A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Manifest Lab" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -207,7 +214,8 @@
       <button class="auth-btn" onclick="doLogin()">登入</button>
       <div class="auth-divider">還沒有帳號？<span style="color:var(--accent);cursor:pointer;" onclick="switchTab('register')">立即註冊</span></div>
       <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.7;background:#FAF7F2;border-radius:8px;padding:10px 12px;text-align:left;">
-        💡 資料儲存在你的瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄。
+        💡 資料儲存在你的瀏覽器。請勿使用無痕模式，並避免清除瀏覽器記錄。<br>
+        📱 iPhone 用戶：點 Safari 底部 <strong>分享 → 加入主畫面</strong>，像App一樣使用。
       </div>
     </div>
     <!-- Register -->
@@ -572,6 +580,23 @@
 </div>
 
 </div><!-- /main -->
+
+<!-- PWA install banner (Android/Chrome) -->
+<div id="pwa-install-bar" style="display:none;position:fixed;bottom:72px;left:0;right:0;z-index:300;padding:0 16px;">
+  <div style="background:var(--accent);color:#fff;border-radius:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(212,120,138,0.4);">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;">🌸</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;">加到主畫面</div>
+        <div style="font-size:11px;opacity:0.85;">像App一樣使用 Manifest Lab</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="installPWA()" style="background:#fff;color:var(--accent);border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">安裝</button>
+      <button onclick="document.getElementById('pwa-install-bar').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;">✕</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════════════════════════════════════
@@ -1397,6 +1422,34 @@ document.getElementById('settings-overlay').addEventListener('click', e => {
 });
 
 speechSynthesis.onvoiceschanged = () => {};
+
+// ── PWA: Register Service Worker ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW failed:', err));
+  });
+}
+
+// ── PWA: Install prompt ───────────────────────────────────────────────────
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('pwa-install-bar').style.display = 'flex';
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    document.getElementById('pwa-install-bar').style.display = 'none';
+  });
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-bar').style.display = 'none';
+});
 </script>
 </body>
 </html>
