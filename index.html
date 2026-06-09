@@ -162,37 +162,144 @@
   .copy-btn { color: var(--accent); }
   .copy-btn.done { color: #6cc26c; }
 
-  /* ── Mobile ───────────────────────────────────────────────────────────────── */
+  /* ── Mobile hamburger menu ───────────────────────────────────────────────── */
+  #mobile-topbar {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+    background: rgba(250,247,242,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: 52px; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+  }
+  #mobile-topbar .logo-text { font-size: 16px; font-weight: 700; color: var(--text); }
+  #mobile-topbar .logo-sub  { font-size: 10px; color: var(--muted); font-style: italic; }
+  #hamburger-btn {
+    width: 40px; height: 40px; background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; transition: background 0.15s;
+  }
+  #hamburger-btn:hover { background: var(--border); }
+  #hamburger-btn span { font-size: 22px; }
+
+  /* Slide-in drawer */
+  #mobile-drawer {
+    position: fixed; top: 0; right: -100%; bottom: 0; width: 280px; z-index: 400;
+    background: var(--white); box-shadow: -4px 0 24px rgba(44,38,64,0.15);
+    transition: right 0.3s ease; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  #mobile-drawer.open { right: 0; }
+  #drawer-overlay {
+    position: fixed; inset: 0; z-index: 399;
+    background: rgba(44,38,64,0.3); backdrop-filter: blur(2px);
+    display: none;
+  }
+  #drawer-overlay.show { display: block; }
+  .drawer-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .drawer-close { font-size: 20px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px 8px; border-radius: 8px; }
+  .drawer-close:hover { background: var(--border); }
+  .drawer-section { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .drawer-section-title { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; padding: 8px 20px 4px; text-transform: uppercase; }
+  .drawer-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; cursor: pointer; color: var(--soft);
+    font-size: 14px; transition: all 0.15s;
+  }
+  .drawer-item:hover { background: #FDF0F2; color: var(--accent); }
+  .drawer-item.active { background: #FDF0F2; color: var(--accent); font-weight: 600; border-right: 3px solid var(--accent); }
+  .drawer-item span:first-child { font-size: 20px; width: 28px; text-align: center; }
+  .drawer-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
+
   @media (max-width: 680px) {
-    body { flex-direction: column; padding-bottom: 64px; }
-    #sidebar { width: 100%; height: 64px; position: fixed; top: auto; bottom: 0; left: 0; right: 0; flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0; border-right: none; border-top: 1px solid var(--border); z-index: 200; scrollbar-width: none; }
-    #sidebar::-webkit-scrollbar { display: none; }
-    /* Show settings tab in mobile nav, hide desktop-only nav-settings block */
-    .nav-settings { display: none; }
-    .mobile-settings-tab { display: flex !important; }
-    .logo { display: none; }
-    .nav-settings { display: none; }
-    .nav-item { flex-direction: column; gap: 2px; padding: 8px 14px; font-size: 9px; border-left: none; border-top: 3px solid transparent; white-space: nowrap; flex-shrink: 0; min-width: 56px; justify-content: center; align-items: center; }
-    .nav-item.active { border-left: none; border-top-color: var(--accent); background: #FDF0F2; }
-    .nav-item span:first-child { font-size: 20px; }
-    #main { margin-left: 0; padding: 20px 16px; max-width: 100%; }
+    body { flex-direction: column; padding-top: 52px; }
+    #sidebar { display: none; }
+    .mobile-settings-tab { display: none !important; }
+    #mobile-topbar { display: flex; }
+    #main { margin-left: 0; padding: 16px 16px 32px; max-width: 100%; }
     .g2, .g3 { grid-template-columns: 1fr; }
-    .hero { padding: 32px 20px; margin-bottom: 20px; }
+    .hero { padding: 28px 16px; margin-bottom: 16px; }
     .hero-t1, .hero-t2 { font-size: 28px; }
     .page-title { font-size: 22px; }
-    .card { padding: 18px 16px; }
+    .card { padding: 16px 14px; }
     #audio-bar .row { flex-wrap: wrap; gap: 8px; }
     .filter-row .btn, .filter-row .btn-ghost { padding: 5px 10px; font-size: 10px; }
-    .diary-entry { flex-wrap: wrap; padding: 14px 16px; }
+    .diary-entry { flex-wrap: wrap; padding: 12px 14px; }
     .dur-btn { padding: 6px 12px !important; font-size: 11px !important; }
     #milestones { grid-template-columns: 1fr 1fr; }
     #quick-nav { grid-template-columns: 1fr 1fr !important; }
-    .auth-box { padding: 32px 24px; }
-    .settings-box { padding: 24px 20px; }
+    .auth-box { padding: 28px 20px; }
+    .settings-box { padding: 20px 16px; }
   }
 </style>
 </head>
 <body>
+
+<!-- ── MOBILE TOP BAR ───────────────────────────────────────────────────────── -->
+<div id="mobile-topbar">
+  <div>
+    <div class="logo-text">🌸 Manifest Lab</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button id="hamburger-btn" onclick="openDrawer()"><span>☰</span></button>
+  </div>
+</div>
+
+<!-- ── DRAWER OVERLAY ────────────────────────────────────────────────────────── -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- ── MOBILE DRAWER ─────────────────────────────────────────────────────────── -->
+<div id="mobile-drawer">
+  <div class="drawer-header">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">Manifest Lab</div>
+      <div style="font-size:10px;color:var(--muted);font-style:italic;margin-top:2px;" id="drawer-username"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-title">主頁</div>
+    <div class="drawer-item" data-page="home"      onclick="drawerGoTo('home')">      <span>🌸</span><span>首頁</span></div>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-title">練習工具</div>
+    <div class="drawer-item" data-page="library"   onclick="drawerGoTo('library')">   <span>🎧</span><span>狂A播放器庫</span></div>
+    <div class="drawer-item" data-page="diary"     onclick="drawerGoTo('diary')">     <span>🔥</span><span>狂A日記</span></div>
+    <div class="drawer-item" data-page="timer"     onclick="drawerGoTo('timer')">     <span>⏱️</span><span>專注計時器</span></div>
+    <div class="drawer-item" data-page="revision"  onclick="drawerGoTo('revision')">  <span>🌙</span><span>Revision 練習</span></div>
+    <div class="drawer-item" data-page="challenge" onclick="drawerGoTo('challenge')"> <span>🏆</span><span>每月挑戰</span></div>
+    <div class="drawer-item" data-page="practices" onclick="drawerGoTo('practices')"> <span>📖</span><span>顯化練習庫</span></div>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-title">追蹤</div>
+    <div class="drawer-item" data-page="mood"      onclick="drawerGoTo('mood')">      <span>📊</span><span>心情追蹤</span></div>
+    <div class="drawer-item" data-page="club"      onclick="drawerGoTo('club')">      <span>🏅</span><span>百萬狂A俱樂部</span></div>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-title">資料庫</div>
+    <div class="drawer-item" data-page="wiki"      onclick="drawerGoTo('wiki')">      <span>📚</span><span>顯化百科</span></div>
+    <div class="drawer-item" data-page="faq"       onclick="drawerGoTo('faq')">       <span>❓</span><span>FAQ</span></div>
+    <div class="drawer-item" data-page="stories"   onclick="drawerGoTo('stories')">   <span>🌟</span><span>成功案例牆</span></div>
+  </div>
+
+  <div class="drawer-footer">
+    <a href="https://ko-fi.com/mymanifestlab" target="_blank" style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FAF0F4,#F5EEF8);border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-decoration:none;margin-bottom:10px;">
+      <span style="font-size:18px;">☕</span>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--accent);">支持 Manifest Lab</div>
+        <div style="font-size:10px;color:var(--muted);">ko-fi.com/mymanifestlab</div>
+      </div>
+    </a>
+    <div class="drawer-item" style="border-radius:10px;" onclick="openSettings();closeDrawer()"><span>⚙️</span><span>設定</span></div>
+  </div>
+</div>
 
 <!-- ── AUTH OVERLAY ──────────────────────────────────────────────────────────── -->
 <div id="auth-overlay">
@@ -1102,6 +1209,8 @@ function loginSuccess(uid, email, name) {
   currentUser = { uid, email, name };
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('sidebar-username').textContent = '👤 ' + name;
+  const du = document.getElementById('drawer-username');
+  if (du) du.textContent = '👤 ' + name;
   // Init user data if first login
   if (!getUserData(uid)) saveUserData(uid, defaultData());
   loadUserData();
@@ -1272,11 +1381,19 @@ document.querySelectorAll(".nav-item[data-page]").forEach(n => {
 // ════════════════════════════════════════════════════════════════════════════
 function renderHome() {
   document.getElementById("daily-reminder").textContent = `"${DAILY[new Date().getDay() % DAILY.length]}"`;
-  document.getElementById("quick-nav").innerHTML = PAGES.slice(1).map(p =>
-    `<div class="nav-card" onclick="goTo('${p}')">
-       <span style="font-size:18px;">${PAGE_ICONS[p]}</span>
-       <span>${PAGE_LABELS[p]}</span>
-     </div>`).join("");
+  // Group nav cards by section for home page
+  const navGroups = [
+    { title:"練習工具", pages:["library","diary","timer","revision","challenge","practices"] },
+    { title:"追蹤",     pages:["mood","club"] },
+    { title:"資料庫",   pages:["wiki","faq","stories"] },
+  ];
+  document.getElementById("quick-nav").innerHTML = navGroups.map(g => `
+    <div style="grid-column:1/-1;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin:4px 0 -4px;">${g.title}</div>
+    ${g.pages.map(p => `<div class="nav-card" onclick="goTo('${p}')">
+      <span style="font-size:18px;">${PAGE_ICONS[p]}</span>
+      <span>${PAGE_LABELS[p]}</span>
+    </div>`).join('')}
+  `).join('');
   // challenge day counter
   const d = currentUser ? (getUserData(currentUser.uid)||defaultData()) : defaultData();
   const dayNum = Math.min(Math.floor((Date.now()-(d.challengeStart||Date.now()))/(1000*60*60*24))+1, 21);
@@ -1906,6 +2023,29 @@ document.getElementById('settings-overlay').addEventListener('click', e => {
 });
 
 speechSynthesis.onvoiceschanged = () => {};
+
+// ── Mobile Drawer ────────────────────────────────────────────────────────────
+function openDrawer() {
+  document.getElementById('mobile-drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  // Update active state
+  document.querySelectorAll('.drawer-item[data-page]').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === currentPage);
+  });
+}
+function closeDrawer() {
+  document.getElementById('mobile-drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function drawerGoTo(page) {
+  goTo(page);
+  closeDrawer();
+  // Scroll to top
+  document.getElementById('main').scrollTop = 0;
+  window.scrollTo(0,0);
+}
 
 // ── PWA: Register Service Worker ─────────────────────────────────────────
 if ('serviceWorker' in navigator) {
