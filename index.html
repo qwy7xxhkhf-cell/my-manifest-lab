@@ -274,6 +274,9 @@
     <div class="drawer-item" data-page="revision"  onclick="drawerGoTo('revision')">  <span>🌙</span><span>Revision 練習</span></div>
     <div class="drawer-item" data-page="challenge" onclick="drawerGoTo('challenge')"> <span>🏆</span><span>每月挑戰</span></div>
     <div class="drawer-item" data-page="practices" onclick="drawerGoTo('practices')"> <span>📖</span><span>顯化練習庫</span></div>
+    <div class="drawer-item" data-page="dailycard" onclick="drawerGoTo('dailycard')"> <span>✨</span><span>每日顯化卡</span></div>
+    <div class="drawer-item" data-page="course"    onclick="drawerGoTo('course')">    <span>🗓️</span><span>30天課程</span></div>
+    <div class="drawer-item" data-page="sp"        onclick="drawerGoTo('sp')">        <span>💕</span><span>SP 專屬模式</span></div>
   </div>
 
   <div class="drawer-section">
@@ -338,6 +341,10 @@
       <input class="auth-input" id="reg-email" type="email" placeholder="電郵地址" autocomplete="email" />
       <input class="auth-input" id="reg-pw" type="password" placeholder="密碼（至少6位）" autocomplete="new-password" />
       <input class="auth-input" id="reg-pw2" type="password" placeholder="確認密碼" autocomplete="new-password" />
+      <div style="position:relative;">
+        <input class="auth-input" id="reg-code" type="text" placeholder="🔑 啟用碼（付款後提供）" autocomplete="off" style="letter-spacing:0.08em;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" />
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:-6px 0 10px;line-height:1.6;">付款後在收據中找到啟用碼</div>
       <button class="auth-btn" id="reg-btn" onclick="doRegister()">建立帳號</button>
     </div>
     <!-- Email verification notice -->
@@ -415,6 +422,9 @@
   <div class="nav-item" data-page="revision">        <span>🌙</span><span>Revision 練習</span></div>
   <div class="nav-item" data-page="mood">            <span>📊</span><span>心情追蹤</span></div>
   <div class="nav-item" data-page="timer">           <span>⏱️</span><span>專注計時器</span></div>
+  <div class="nav-item" data-page="dailycard">       <span>✨</span><span>每日顯化卡</span></div>
+  <div class="nav-item" data-page="course">          <span>🗓️</span><span>30天課程</span></div>
+  <div class="nav-item" data-page="sp">              <span>💕</span><span>SP 專屬模式</span></div>
   <div class="nav-settings">
     <div style="padding:12px 24px;">
       <a href="https://ko-fi.com/mymanifestlab" target="_blank" style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#FAF0F4,#F5EEF8);border:1px solid var(--border);border-radius:12px;padding:10px 14px;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -853,6 +863,122 @@
   </div>
 </div>
 
+
+<!-- DAILY CARD -->
+<div id="page-dailycard" class="page">
+  <div class="page-title">✨ 每日顯化卡</div>
+  <div class="page-sub">每天一張金句卡 · 截圖分享到 Threads / IG</div>
+
+  <!-- Card preview -->
+  <div style="margin-bottom:20px;">
+    <canvas id="daily-card-canvas" style="width:100%;border-radius:20px;box-shadow:0 8px 32px rgba(212,120,138,0.2);display:block;"></canvas>
+  </div>
+
+  <div class="g2" style="margin-bottom:16px;">
+    <button class="btn" onclick="generateCard()" style="padding:14px;">🎲 換一張</button>
+    <button class="btn-ghost" onclick="downloadCard()" style="padding:14px;">⬇ 下載圖片</button>
+  </div>
+
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;">自訂卡片</div>
+    <input id="card-custom-text" placeholder="輸入你的狂A句……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;margin-bottom:10px;" />
+    <button class="btn" onclick="generateCustomCard()" style="width:100%;padding:12px;">生成我的卡片</button>
+  </div>
+
+  <div class="card" style="background:#FAF7F2;">
+    <div style="font-size:12px;color:var(--soft);line-height:1.8;">
+      💡 下載後分享到 Threads 或 IG Story，帶上 <strong>@mymanifestlab</strong> 標籤 🌸
+    </div>
+  </div>
+</div>
+
+<!-- 30-DAY COURSE -->
+<div id="page-course" class="page">
+  <div class="page-title">🗓️ 30天顯化課程</div>
+  <div class="page-sub">每天一個任務 · 結構化建立新假設 · 30天重塑大腦</div>
+
+  <!-- Progress -->
+  <div class="card" style="background:linear-gradient(135deg,#F5EEF8,#FAF0F4);margin-bottom:20px;text-align:center;padding:24px;">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:0.14em;margin-bottom:8px;">課程進度</div>
+    <div style="font-size:42px;font-weight:700;color:var(--accent);" id="course-day-display">Day 1</div>
+    <div style="height:6px;background:var(--border);border-radius:4px;overflow:hidden;margin:12px 0;">
+      <div id="course-prog-bar" style="height:100%;background:linear-gradient(90deg,var(--lavd),var(--accent));border-radius:4px;width:3%;transition:width 0.5s;"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);" id="course-prog-text">1 / 30 天</div>
+  </div>
+
+  <!-- Today's task -->
+  <div class="card" style="margin-bottom:14px;border-color:var(--accent);" id="course-today-card">
+    <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:0.1em;margin-bottom:8px;">TODAY</div>
+    <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px;" id="course-today-title"></div>
+    <div style="font-size:13px;color:var(--soft);line-height:1.8;margin-bottom:14px;" id="course-today-desc"></div>
+    <div style="background:#FAF0F4;border-radius:10px;padding:10px 14px;font-size:12px;color:var(--soft);margin-bottom:14px;">
+      📝 今日任務：<span id="course-today-task" style="font-weight:600;"></span>
+    </div>
+    <textarea id="course-journal" rows="3" placeholder="在這裡完成今日任務……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;margin-bottom:10px;"></textarea>
+    <button class="btn" onclick="completeCourseDay()" style="width:100%;padding:12px;">✓ 完成今天</button>
+  </div>
+
+  <div id="course-done-msg" style="display:none;text-align:center;background:linear-gradient(135deg,#F5EEF8,#FAF0F4);border-radius:14px;padding:20px;margin-bottom:14px;">
+    <div style="font-size:22px;margin-bottom:6px;">🎉</div>
+    <div style="font-size:14px;font-weight:600;color:var(--accent);">今天完成了！</div>
+    <div style="font-size:12px;color:var(--soft);margin-top:4px;">明天繼續 · 持續才是唯一的工作</div>
+  </div>
+
+  <!-- All days list -->
+  <div style="font-size:11px;color:var(--muted);letter-spacing:0.1em;margin-bottom:12px;">全部30天</div>
+  <div id="course-list"></div>
+</div>
+
+<!-- SP MODE -->
+<div id="page-sp" class="page">
+  <div class="page-title">💕 SP 專屬模式</div>
+  <div class="page-sub">專門為 SP 顯化設計 · 一步步建立新假設</div>
+
+  <!-- SP Profile -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:12px;">你的 SP 設定</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <input id="sp-name" placeholder="SP的名字或暱稱（可以只寫首字母）" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);flex:1;" oninput="updateSPPage()"/>
+    </div>
+    <input id="sp-goal" placeholder="你想要的結果（例：我們在一起）" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;margin-bottom:10px;" oninput="updateSPPage()"/>
+    <button class="btn" onclick="saveSP()" style="width:100%;padding:11px;">儲存設定</button>
+  </div>
+
+  <!-- SP Affirmations -->
+  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#FAF0F4,#F5EEF8);">
+    <div style="font-size:12px;font-weight:600;margin-bottom:12px;">💕 你的 SP 狂A句</div>
+    <div id="sp-affs-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.7;">點任何一句直接加入播放器播放 🎧</div>
+  </div>
+
+  <!-- EIYPO Check -->
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;">🪞 EIYPO 每日反思</div>
+    <div style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:12px;">SP今天的行為反映了你什麼假設？</div>
+    <textarea id="sp-eiypo" rows="2" placeholder="例：他今天沒回訊……說明我還在假設自己不夠重要……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;margin-bottom:10px;"></textarea>
+    <div style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:8px;">我要改成什麼新假設？</div>
+    <textarea id="sp-new-assumption" rows="2" placeholder="例：我永遠是他的第一優先，他永遠想回應我……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;margin-bottom:10px;"></textarea>
+    <button class="btn" onclick="saveSPEiypo()" style="width:100%;padding:11px;">記錄今天的反思</button>
+  </div>
+
+  <!-- SP New Story -->
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;">📖 我和SP的新故事</div>
+    <textarea id="sp-story" rows="4" placeholder="用現在式寫下你和SP的新故事……例：我和他的關係完美和諧，他每天都想見到我……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;margin-bottom:10px;"></textarea>
+    <button class="btn" onclick="saveSPStory()" style="width:100%;padding:11px;">儲存新故事</button>
+  </div>
+
+  <!-- SP 3D Log -->
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;">🔥 3D 記錄</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">記錄3D挑戰，提醒自己它只是舊假設的印出</div>
+    <div id="sp-3d-log"></div>
+    <textarea id="sp-3d-input" rows="2" placeholder="今天的3D……" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;outline:none;color:var(--text);width:100%;resize:vertical;line-height:1.8;margin-bottom:8px;"></textarea>
+    <button class="btn-ghost" onclick="addSP3D()" style="width:100%;padding:10px;">+ 記錄（這是舊的）</button>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <!-- PWA install banner (Android/Chrome) -->
@@ -1106,9 +1232,9 @@ const MILESTONES = [
   {count:1000000, emoji:"👑", label:"百萬傳說", desc:"你就是那個假設本身"},
 ];
 
-const PAGES = ["home","library","diary","challenge","wiki","faq","stories","practices","club","revision","mood","timer"];
-const PAGE_ICONS  = {home:"🌸",library:"🎧",diary:"🔥",challenge:"🏆",wiki:"📚",faq:"❓",stories:"🌟",practices:"📖",club:"🏅",revision:"🌙",mood:"📊",timer:"⏱️"};
-const PAGE_LABELS = {home:"首頁",library:"狂A播放器庫",diary:"狂A日記",challenge:"每月挑戰",wiki:"顯化百科",faq:"FAQ",stories:"成功案例牆",practices:"顯化練習庫",club:"百萬狂A俱樂部",revision:"Revision練習",mood:"心情追蹤",timer:"專注計時器"};
+const PAGES = ["home","library","diary","challenge","wiki","faq","stories","practices","club","revision","mood","timer","dailycard","course","sp"];
+const PAGE_ICONS  = {home:"🌸",library:"🎧",diary:"🔥",challenge:"🏆",wiki:"📚",faq:"❓",stories:"🌟",practices:"📖",club:"🏅",revision:"🌙",mood:"📊",timer:"⏱️",dailycard:"✨",course:"🗓️",sp:"💕"};
+const PAGE_LABELS = {home:"首頁",library:"狂A播放器庫",diary:"狂A日記",challenge:"每月挑戰",wiki:"顯化百科",faq:"FAQ",stories:"成功案例牆",practices:"顯化練習庫",club:"百萬狂A俱樂部",revision:"Revision練習",mood:"心情追蹤",timer:"專注計時器",dailycard:"每日顯化卡",course:"30天課程",sp:"SP專屬模式"};
 
 // ════════════════════════════════════════════════════════════════════════════
 // SUPABASE AUTH
@@ -1172,26 +1298,64 @@ async function doLogin() {
   loginSuccess(data.user.id, email, name);
 }
 
+// ── Activation code (change this string to update the code) ──────────────
+const ACTIVATION_CODE = 'MANIFEST2025'; // fallback only
+const VERIFY_API = 'https://manifest-lab-api.vercel.app/api/verify-code';
+
 async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pw    = document.getElementById('reg-pw').value;
   const pw2   = document.getElementById('reg-pw2').value;
+  const code  = document.getElementById('reg-code').value.trim().toUpperCase();
   const err   = document.getElementById('reg-err');
   err.textContent = '';
   if (!name)                { err.textContent = '請輸入暱稱'; return; }
   if (!email.includes('@')) { err.textContent = '請輸入有效電郵'; return; }
   if (pw.length < 6)        { err.textContent = '密碼至少6位'; return; }
   if (pw !== pw2)           { err.textContent = '兩次密碼不一致'; return; }
+  if (!code)                { err.textContent = '請輸入啟用碼'; return; }
+
   setAuthLoading('reg-btn', true);
+
+  // Verify code via API (supports both unique codes and fallback fixed code)
+  let codeValid = false;
+  try {
+    const resp = await fetch(VERIFY_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, email })
+    });
+    const result = await resp.json();
+    codeValid = result.valid === true;
+    if (!codeValid) {
+      setAuthLoading('reg-btn', false);
+      err.textContent = result.error === 'Code already used'
+        ? '啟用碼已被使用，每個碼只能用一次'
+        : '啟用碼錯誤，請檢查付款收據 🔑';
+      return;
+    }
+  } catch(e) {
+    // If API unreachable, fallback to local check
+    if (code !== ACTIVATION_CODE) {
+      setAuthLoading('reg-btn', false);
+      err.textContent = '啟用碼錯誤，請檢查付款收據 🔑';
+      return;
+    }
+    codeValid = true;
+  }
+
   const { data, error } = await sb.auth.signUp({
     email, password: pw,
     options: { data: { name }, emailRedirectTo: window.location.href }
   });
+  if (error) { setAuthLoading('reg-btn', false); err.textContent = error.message; return; }
+  // Auto login (email confirmation disabled)
+  const { data: ld, error: le } = await sb.auth.signInWithPassword({ email, password: pw });
   setAuthLoading('reg-btn', false);
-  if (error) { err.textContent = error.message; return; }
-  // Show verify screen
-  switchTab('verify');
+  if (le) { switchTab('login'); return; }
+  const u = ld.user;
+  loginSuccess(u.id, email, u.user_metadata?.name || name);
 }
 
 async function doForgot() {
@@ -1384,6 +1548,7 @@ function renderHome() {
   // Group nav cards by section for home page
   const navGroups = [
     { title:"練習工具", pages:["library","diary","timer","revision","challenge","practices"] },
+    { title:"特別模式", pages:["sp","dailycard","course"] },
     { title:"追蹤",     pages:["mood","club"] },
     { title:"資料庫",   pages:["wiki","faq","stories"] },
   ];
@@ -1987,14 +2152,366 @@ function scheduleReminders() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DAILY CARD
+// ════════════════════════════════════════════════════════════════════════════
+const CARD_QUOTES = [
+  "Circumstances don't matter.",
+  "持續，是你唯一的工作。",
+  "3D只是舊假設的回聲。",
+  "你不需要感受到。你只需要假設。",
+  "你已經是那個版本的自己了。",
+  "Keep telling the new story.",
+  "SP愛我。",
+  "我永遠被選擇。",
+  "金錢總是流向我。",
+  "所有事情如我所願。",
+  "一切都為我服務。",
+  "我天生值得最好的一切。",
+  "停止對3D作出反應。",
+  "我是一個永遠被愛的人。",
+  "Bridge正在建立。繼續。",
+  "你不需要知道怎麼發生。",
+  "Persist.",
+  "我的假設永遠成真。",
+  "SP永遠選擇我。",
+  "我的新故事是我的現實。",
+];
+
+let currentCardText = "";
+
+function drawDailyCard(text) {
+  const canvas = document.getElementById('daily-card-canvas');
+  if (!canvas) return;
+  const size = Math.min(window.innerWidth - 32, 420);
+  canvas.width  = size * 2;
+  canvas.height = size * 2;
+  canvas.style.width  = size + 'px';
+  canvas.style.height = size + 'px';
+  const ctx = canvas.getContext('2d');
+  const S = size * 2;
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0,   '#FAF7F2');
+  bg.addColorStop(0.5, '#F5EEF8');
+  bg.addColorStop(1,   '#FAF0F4');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // Soft blobs
+  const g1 = ctx.createRadialGradient(S*0.8, S*0.2, 0, S*0.8, S*0.2, S*0.4);
+  g1.addColorStop(0, 'rgba(242,212,215,0.5)');
+  g1.addColorStop(1, 'rgba(242,212,215,0)');
+  ctx.beginPath(); ctx.arc(S*0.8, S*0.2, S*0.4, 0, Math.PI*2);
+  ctx.fillStyle = g1; ctx.fill();
+
+  const g2 = ctx.createRadialGradient(S*0.2, S*0.8, 0, S*0.2, S*0.8, S*0.3);
+  g2.addColorStop(0, 'rgba(232,224,240,0.4)');
+  g2.addColorStop(1, 'rgba(232,224,240,0)');
+  ctx.beginPath(); ctx.arc(S*0.2, S*0.8, S*0.3, 0, Math.PI*2);
+  ctx.fillStyle = g2; ctx.fill();
+
+  // Top label
+  ctx.textAlign = 'center';
+  ctx.font = `${S*0.04}px Georgia, serif`;
+  ctx.fillStyle = '#B0A8C0';
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText('MANIFEST LAB', S/2, S*0.12);
+
+  // Divider top
+  ctx.beginPath(); ctx.moveTo(S*0.35, S*0.17); ctx.lineTo(S*0.65, S*0.17);
+  ctx.strokeStyle = '#D4788A'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.35; ctx.stroke(); ctx.globalAlpha = 1;
+
+  // Quote text - word wrap
+  ctx.font = `italic ${S*0.075}px Georgia, serif`;
+  ctx.fillStyle = '#2C2640';
+  const words = text.split('');
+  let lines = [];
+  // For CJK, wrap by character count
+  const isCJK = /[\u4e00-\u9fff]/.test(text);
+  if (isCJK) {
+    const maxChars = text.length <= 8 ? text.length : (text.length <= 14 ? Math.ceil(text.length/2) : Math.ceil(text.length/3));
+    for (let i=0; i<text.length; i+=maxChars) lines.push(text.slice(i,i+maxChars));
+  } else {
+    const wordArr = text.split(' ');
+    let line = '';
+    const maxW = S * 0.7;
+    wordArr.forEach(w => {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+      else line = test;
+    });
+    if (line) lines.push(line);
+  }
+  const lineH = S * 0.095;
+  const totalH = lines.length * lineH;
+  const startY = S/2 - totalH/2 + lineH/2;
+  lines.forEach((l, i) => {
+    ctx.fillText(l, S/2, startY + i * lineH);
+  });
+
+  // Divider bottom
+  ctx.beginPath(); ctx.moveTo(S*0.35, S*0.83); ctx.lineTo(S*0.65, S*0.83);
+  ctx.strokeStyle = '#D4788A'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.35; ctx.stroke(); ctx.globalAlpha = 1;
+
+  // Bottom: @mymanifestlab
+  ctx.font = `${S*0.038}px Georgia, serif`;
+  ctx.fillStyle = '#B0A8C0';
+  ctx.globalAlpha = 0.8;
+  ctx.fillText('@mymanifestlab', S/2, S*0.91);
+  ctx.globalAlpha = 1;
+
+  currentCardText = text;
+}
+
+function generateCard() {
+  const idx = Math.floor(Math.random() * CARD_QUOTES.length);
+  drawDailyCard(CARD_QUOTES[idx]);
+}
+function generateCustomCard() {
+  const t = document.getElementById('card-custom-text').value.trim();
+  if (t) drawDailyCard(t);
+}
+function downloadCard() {
+  const canvas = document.getElementById('daily-card-canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'manifest-lab-card.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 30-DAY COURSE
+// ════════════════════════════════════════════════════════════════════════════
+const COURSE_DATA = [
+  ["建立你的第一句狂A","選一句最能代表你想要的身份的句子，今天開始使用。不需要相信，只需要重複。","選定你的狂A句並寫下來"],
+  ["了解 EIYPO","每個人都是你推出去的。SP的行為是你內心信念的反映，不是他的選擇。","找出一個你對SP的舊假設，想想它是從哪裡來的"],
+  ["Mental Diet 第一天","今天練習：每次負面念頭出現，立刻替換成新假設。不批判自己，只是切換。","記錄今天你切換了幾次念頭"],
+  ["寫你的新故事","用現在式寫下你想要的現實，像在說顯而易見的事實。不是希望，是事實。","寫一段50字以上的新故事"],
+  ["認識3D vs 4D","3D是舊的印出。4D是你的內心世界，才是真實的。遇到3D挑戰，提醒自己「這是舊的」。","記錄今天遇到的3D挑戰和你的反應"],
+  ["SAT 黃金時間","睡前5分鐘是潛意識最開放的時刻。今晚：帶著你的新故事入睡。","今晚睡前默念你的狂A句5分鐘"],
+  ["第一週總結","回顧這7天。你的狂A句是什麼？你有持續嗎？不批判，只觀察。","寫下你這週的感受和觀察"],
+  ["深化Self Concept","今天問自己：我認為自己是一個什麼樣的人？這個答案決定了你能顯化什麼。","寫下你現在的self concept，然後寫下你想要的"],
+  ["Revision 練習","把昨天或今天的3D事件改寫一次。讓改寫後的版本成為你的「記憶」。","做一次完整的Revision練習"],
+  ["加速思想飽和","今天目標：讓你的狂A句在腦中播放至少2小時。通勤、洗澡、做家務都是機會。","記錄今天大概重複了多少次"],
+  ["處理3D挑戰","當3D出現讓你不安：承認它→不讓它改變假設→繼續新故事。","記錄今天遇到的3D和你怎樣處理"],
+  ["視覺化練習","今天花5分鐘：閉上眼睛，在腦海中清晰播放你想要的畫面。越具體越好。","記錄你視覺化了什麼畫面"],
+  ["不需要感受到","重要提醒：你不需要感受到才算有效。麻木和平靜都是正常的。只需要繼續重複。","今天繼續你的狂A，無論感覺如何"],
+  ["兩週總結","回顧14天。你的假設有沒有開始感覺更自然？注意任何細微的改變。","寫下你這兩週的觀察"],
+  ["Bridge of Incidents","你不需要知道怎麼發生。只需要假設結果，讓橋自動出現。今天：停止計劃橋。","記錄你有沒有在想「怎麼發生」，練習放下這個念頭"],
+  ["強化新身份","今天從四個層面確認你的新身份：愛情、金錢、工作、人際。","寫下你在四個層面的新身份宣言"],
+  ["處理執念","如果你發現自己一直在等、一直在查3D，這是執念的信號。練習：把注意力放回假設。","記錄今天你有沒有「監測3D」，怎樣把注意力拉回來"],
+  ["Subliminal 睡眠","今晚睡覺時播放正面的潛意識音頻（YouTube搜尋subliminal affirmations）。","記錄明天醒來的感受"],
+  ["不需要Let Go","你的工作不是放開，是持續居住在新假設中。今天：停止想「怎麼Let Go」。","今天繼續你的狂A和新故事"],
+  ["三週里程碑","你已經持續了21天！慶祝自己的堅持，然後繼續。","寫下這21天你最大的改變或觀察"],
+  ["活在終點狀態","今天問自己：如果我的顯化已經發生，我今天的生活是什麼樣子？盡量活出那個狀態。","記錄你今天怎樣活在終點狀態"],
+  ["深化Mental Diet","今天挑戰：每次負面念頭出現，不只是切換，還要在新假設上多停留30秒。","記錄今天的Mental Diet練習"],
+  ["重塑大腦","神經科學：你重複的念頭形成新的神經通道。你每天的狂A，都在物理上改變你的大腦。繼續。","今天繼續你的狂A"],
+  ["面對最難的3D","如果這30天裡有特別難的3D，今天重新面對它：承認它是舊的，然後改寫它。","做一次針對最難3D的Revision"],
+  ["感謝過程","不是感謝結果，而是感謝你每天的選擇和堅持。今天對自己說：「我做到了持續。」","寫一封給自己的信，記錄這25天的旅程"],
+  ["新故事升級","把你第4天寫的新故事拿出來，今天重新寫一版。它應該感覺更自然了。","對比兩個版本的新故事，感受改變"],
+  ["只剩3天","繼續。不要在終點前放棄。你的假設已經在印出的路上了。","今天繼續所有練習"],
+  ["倒數第二天","明天是最後一天。回顧這30天，你最大的轉變是什麼？","寫下你這30天最大的3個收穫"],
+  ["最後一天","你完成了30天。但這不是終點——這是你新的起點。持續，是你永遠的工作。","寫下你接下來的顯化計劃"],
+  ["30天完成！🎉","恭喜！你的新假設已經比30天前更自然了。現在，繼續生活，繼續假設。","慶祝自己，然後繼續"],
+];
+
+function getCourseData() {
+  if (!currentUser) return { day:1, completed:[], journals:{} };
+  const ud = getUserData(currentUser.uid)||defaultData();
+  return ud.course || { day:1, completed:[], journals:{} };
+}
+function saveCourseData(cd) {
+  if (!currentUser) return;
+  const ud = getUserData(currentUser.uid)||defaultData();
+  ud.course = cd;
+  saveUserData(currentUser.uid, ud);
+}
+
+function renderCoursePage() {
+  const cd = getCourseData();
+  const day = Math.min(cd.day||1, 30);
+  const pct = Math.round((cd.completed||[]).length / 30 * 100);
+
+  const dispEl = document.getElementById('course-day-display');
+  const progEl = document.getElementById('course-prog-bar');
+  const textEl = document.getElementById('course-prog-text');
+  if (dispEl) dispEl.textContent = 'Day ' + day;
+  if (progEl) progEl.style.width = Math.max(pct,3) + '%';
+  if (textEl) textEl.textContent = (cd.completed||[]).length + ' / 30 天';
+
+  // Today
+  const idx = day - 1;
+  const t = COURSE_DATA[idx] || COURSE_DATA[29];
+  const titleEl = document.getElementById('course-today-title');
+  const descEl  = document.getElementById('course-today-desc');
+  const taskEl  = document.getElementById('course-today-task');
+  const jEl     = document.getElementById('course-journal');
+  if (titleEl) titleEl.textContent = 'Day ' + day + '：' + t[0];
+  if (descEl)  descEl.textContent  = t[1];
+  if (taskEl)  taskEl.textContent  = t[2];
+  if (jEl)     jEl.value           = (cd.journals||{})[day] || '';
+
+  const isDone = (cd.completed||[]).includes(day);
+  const doneEl = document.getElementById('course-done-msg');
+  if (doneEl) doneEl.style.display = isDone ? 'block' : 'none';
+
+  // Full list
+  const listEl = document.getElementById('course-list');
+  if (listEl) {
+    listEl.innerHTML = COURSE_DATA.map((d,i) => {
+      const n = i+1;
+      const done = (cd.completed||[]).includes(n);
+      const isToday = n === day;
+      return `<div class="card" style="padding:14px 16px;margin-bottom:8px;opacity:${n>day?0.45:1};${isToday?'border-color:var(--accent);':''}" onclick="${n<=day?`goToDay(${n})`:''}">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:${done?'var(--accent)':isToday?'var(--lav)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:${done?'#fff':'var(--soft)'};">${done?'✓':n}</div>
+          <div style="flex:1;font-size:13px;font-weight:${isToday?700:400};color:${isToday?'var(--accent)':'var(--text)'};">${d[0]}</div>
+          ${isToday?'<span style="font-size:10px;color:var(--accent);font-weight:600;">TODAY</span>':''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function completeCourseDay() {
+  const cd = getCourseData();
+  const day = cd.day || 1;
+  const journal = document.getElementById('course-journal').value.trim();
+  if (!cd.completed) cd.completed = [];
+  if (!cd.journals)  cd.journals  = {};
+  if (!cd.completed.includes(day)) cd.completed.push(day);
+  cd.journals[day] = journal;
+  if (day < 30) cd.day = day + 1;
+  saveCourseData(cd);
+  renderCoursePage();
+}
+
+function goToDay(n) {
+  const cd = getCourseData();
+  cd.day = n;
+  saveCourseData(cd);
+  renderCoursePage();
+  document.getElementById('course-journal').value = (cd.journals||{})[n] || '';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SP MODE
+// ════════════════════════════════════════════════════════════════════════════
+function getSPData() {
+  if (!currentUser) return { name:'', goal:'', story:'', eiypo:[], log3d:[] };
+  const ud = getUserData(currentUser.uid)||defaultData();
+  return ud.spData || { name:'', goal:'', story:'', eiypo:[], log3d:[] };
+}
+function saveSPData(d) {
+  if (!currentUser) return;
+  const ud = getUserData(currentUser.uid)||defaultData();
+  ud.spData = d;
+  saveUserData(currentUser.uid, ud);
+}
+
+function updateSPPage() {
+  const name = document.getElementById('sp-name').value.trim() || 'SP';
+  const goal = document.getElementById('sp-goal').value.trim() || '我們在一起';
+  const affs = [
+    `${name}愛我`,
+    `${name}永遠選擇我`,
+    `${name}只愛我一個人`,
+    `我是${name}的唯一`,
+    `${name}和我在一起`,
+    `${goal}`,
+    `${name}主動聯絡我`,
+    `${name}深深愛著我`,
+  ];
+  const el = document.getElementById('sp-affs-list');
+  if (el) {
+    el.innerHTML = affs.map(a => `
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="playAffFromSP('${a.replace(/'/g,"\\'")}')">
+        <span style="font-size:14px;font-weight:600;color:var(--text);">${a}</span>
+        <span style="font-size:18px;">🎧</span>
+      </div>`).join('');
+  }
+}
+
+function playAffFromSP(text) {
+  // Switch to library page with this text playing
+  document.getElementById('custom-aff').value = text;
+  goTo('library');
+  setTimeout(() => toggleCustom(), 300);
+}
+
+function saveSP() {
+  const d = getSPData();
+  d.name  = document.getElementById('sp-name').value.trim();
+  d.goal  = document.getElementById('sp-goal').value.trim();
+  saveSPData(d);
+  updateSPPage();
+  alert('SP設定已儲存 🌸');
+}
+
+function saveSPStory() {
+  const d = getSPData();
+  d.story = document.getElementById('sp-story').value;
+  saveSPData(d);
+  alert('新故事已儲存 🌸');
+}
+
+function saveSPEiypo() {
+  const d = getSPData();
+  if (!d.eiypo) d.eiypo = [];
+  d.eiypo.unshift({
+    date: new Date().toLocaleDateString('zh-TW'),
+    old: document.getElementById('sp-eiypo').value.trim(),
+    newA: document.getElementById('sp-new-assumption').value.trim()
+  });
+  saveSPData(d);
+  document.getElementById('sp-eiypo').value = '';
+  document.getElementById('sp-new-assumption').value = '';
+  renderSPPage();
+}
+
+function addSP3D() {
+  const text = document.getElementById('sp-3d-input').value.trim();
+  if (!text) return;
+  const d = getSPData();
+  if (!d.log3d) d.log3d = [];
+  d.log3d.unshift({ date: new Date().toLocaleDateString('zh-TW'), text });
+  saveSPData(d);
+  document.getElementById('sp-3d-input').value = '';
+  renderSPPage();
+}
+
+function renderSPPage() {
+  const d = getSPData();
+  if (d.name) document.getElementById('sp-name').value = d.name;
+  if (d.goal) document.getElementById('sp-goal').value = d.goal;
+  if (d.story) document.getElementById('sp-story').value = d.story;
+  updateSPPage();
+
+  // 3D log
+  const logEl = document.getElementById('sp-3d-log');
+  if (logEl && d.log3d && d.log3d.length > 0) {
+    logEl.innerHTML = d.log3d.slice(0,5).map(l => `
+      <div style="background:#FAF7F2;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--soft);line-height:1.6;">
+        <span style="color:var(--muted);font-size:10px;">${l.date}</span><br>${l.text}
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic;">↑ 這是舊的，不是真相</div>
+      </div>`).join('');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════════════════
 function initApp() {
   renderHome(); renderLibrary(); renderDiary(); renderWiki();
   renderFAQ(); renderStories(); renderPractices(); renderMilestones();
   renderRevisionHistory(); renderMoodPage();
+  renderCoursePage(); renderSPPage();
   loadReminders();
   updateClub();
+  // Generate first daily card
+  setTimeout(() => generateCard(), 100);
 }
 
 // ── Supabase session restore ─────────────────────────────────────────────
