@@ -1298,8 +1298,8 @@ async function doLogin() {
   loginSuccess(data.user.id, email, name);
 }
 
-// ── Activation code (change this string to update the code) ──────────────
-const ACTIVATION_CODE = 'MANIFEST2025'; // fallback only
+// ── Activation code ──────────────────────────────────────────────────────
+const ACTIVATION_CODE = 'MANIFEST2025';
 const VERIFY_API = 'https://manifest-lab-api.vercel.app/api/verify-code';
 
 async function doRegister() {
@@ -1315,42 +1315,14 @@ async function doRegister() {
   if (pw.length < 6)        { err.textContent = '密碼至少6位'; return; }
   if (pw !== pw2)           { err.textContent = '兩次密碼不一致'; return; }
   if (!code)                { err.textContent = '請輸入啟用碼'; return; }
+  if (code !== ACTIVATION_CODE) { err.textContent = '啟用碼錯誤，請檢查付款收據 🔑'; return; }
 
   setAuthLoading('reg-btn', true);
-
-  // Verify code via API (supports both unique codes and fallback fixed code)
-  let codeValid = false;
-  try {
-    const resp = await fetch(VERIFY_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, email })
-    });
-    const result = await resp.json();
-    codeValid = result.valid === true;
-    if (!codeValid) {
-      setAuthLoading('reg-btn', false);
-      err.textContent = result.error === 'Code already used'
-        ? '啟用碼已被使用，每個碼只能用一次'
-        : '啟用碼錯誤，請檢查付款收據 🔑';
-      return;
-    }
-  } catch(e) {
-    // If API unreachable, fallback to local check
-    if (code !== ACTIVATION_CODE) {
-      setAuthLoading('reg-btn', false);
-      err.textContent = '啟用碼錯誤，請檢查付款收據 🔑';
-      return;
-    }
-    codeValid = true;
-  }
-
   const { data, error } = await sb.auth.signUp({
     email, password: pw,
     options: { data: { name }, emailRedirectTo: window.location.href }
   });
   if (error) { setAuthLoading('reg-btn', false); err.textContent = error.message; return; }
-  // Auto login (email confirmation disabled)
   const { data: ld, error: le } = await sb.auth.signInWithPassword({ email, password: pw });
   setAuthLoading('reg-btn', false);
   if (le) { switchTab('login'); return; }
